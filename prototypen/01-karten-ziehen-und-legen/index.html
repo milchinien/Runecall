@@ -1,0 +1,1147 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Runecall — Prototyp 01: Geben, Analysieren, Legen</title>
+<style>
+/* ------------------------------------------------------------------
+   Runecall — Prototyp 01
+   Eine Datei, kein Build, keine Verbindung zum echten Spiel.
+   Faecher-Geometrie nach dem Card-Stack-Vorbild (kokonutui),
+   umgesetzt in CSS-Transforms statt motion/react.
+------------------------------------------------------------------- */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg:      #f2ece1;
+  --bg-deep: #e5dbc8;
+  --panel:   #fffdf7;
+  --ink:     #241f18;
+  --muted:   #7d7263;
+  --line:    #d5c8b1;
+  --accent:  #6d3fd1;
+  --good:    #2c8b58;
+  --bad:     #c34239;
+
+  --rot:   #d84a3c;
+  --gelb:  #d9a11c;
+  --gruen: #369a58;
+  --blau:  #3a72c6;
+
+  --card-w: 92px;
+  --card-h: 132px;
+
+  --ease: cubic-bezier(.34, 1.42, .5, 1);
+  --dur: .42s;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:      #17140f;
+    --bg-deep: #100e0a;
+    --panel:   #221d16;
+    --ink:     #f2ebdd;
+    --muted:   #9d9182;
+    --line:    #3a3126;
+    --accent:  #a385f5;
+    --good:    #56c78a;
+    --bad:     #e2705f;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur: .001s; --ease: linear; }
+}
+
+html, body { height: 100%; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.45 "Segoe UI", system-ui, -apple-system, sans-serif;
+  -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;
+}
+
+/* ---------------- Kopfzeile ---------------- */
+
+.top {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px;
+  padding: 10px 16px;
+  background: var(--panel);
+  border-bottom: 2px solid var(--line);
+}
+
+.brand { font-weight: 800; letter-spacing: -.01em; }
+.brand > span { color: var(--accent); }
+.brand small { display: block; font-weight: 500; color: var(--muted); letter-spacing: 0; }
+
+.ctrl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-left: auto; }
+.ctrl label { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 13px; }
+
+select, input[type=text], button {
+  font: inherit; font-size: 13px;
+  color: var(--ink); background: var(--panel);
+  border: 2px solid var(--line); border-radius: 9px;
+  padding: 5px 9px;
+}
+input[type=text] { width: 92px; }
+button { font-weight: 700; cursor: pointer; transition: transform .1s, border-color .15s, background .15s; }
+button:hover { border-color: var(--accent); }
+button:active { transform: translateY(1px); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button.on { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+button:disabled { opacity: .4; cursor: default; }
+
+/* ---------------- Grundraster ---------------- */
+
+main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 330px;
+  gap: 14px;
+  padding: 14px;
+  align-items: start;
+}
+main.no-panel { grid-template-columns: minmax(0, 1fr); }
+main.no-panel .panel { display: none; }
+
+.table {
+  min-width: 0;
+  background: linear-gradient(180deg, var(--bg-deep), var(--bg));
+  border: 2px solid var(--line);
+  border-radius: 18px;
+  padding: 12px;
+}
+
+/* ---------------- Mitspieler ---------------- */
+
+.seats { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+
+.seat {
+  flex: 1 1 130px; max-width: 190px;
+  background: var(--panel);
+  border: 2px solid var(--line); border-radius: 12px;
+  padding: 7px 9px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.seat.turn { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.seat.me { background: color-mix(in srgb, var(--accent) 7%, var(--panel)); }
+.seat__name { font-weight: 800; font-size: 13px; display: flex; justify-content: space-between; gap: 6px; }
+.seat__name i { font-style: normal; color: var(--muted); font-weight: 600; }
+.seat__meta { color: var(--muted); font-size: 12px; display: flex; gap: 8px; margin-top: 2px; }
+.seat__meta b { color: var(--ink); }
+.seat__meta b.hit { color: var(--good); }
+.seat__meta b.miss { color: var(--bad); }
+.seat__back { display: flex; margin-top: 5px; height: 20px; }
+.seat__back i {
+  width: 10px; height: 18px; flex: none;
+  border: 1.5px solid var(--line); border-radius: 3px;
+  background: repeating-linear-gradient(45deg, var(--accent) 0 2px, transparent 2px 4px), var(--panel);
+  margin-right: -5px;
+}
+
+/* ---------------- Tischmitte ---------------- */
+
+.middle {
+  display: flex; align-items: flex-start; justify-content: center; gap: 14px;
+  flex-wrap: wrap;
+  margin: 12px 0 4px;
+}
+
+.pile { text-align: center; }
+.pile__label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 4px; }
+
+.deck { position: relative; width: var(--card-w); height: var(--card-h); margin: 0 auto; }
+.deck i {
+  position: absolute; inset: 0;
+  border: 2px solid var(--line); border-radius: 11px;
+  background: repeating-linear-gradient(45deg, color-mix(in srgb, var(--accent) 55%, transparent) 0 4px, transparent 4px 8px), var(--panel);
+}
+.deck i:nth-child(2) { transform: translate(3px, -3px); }
+.deck i:nth-child(3) { transform: translate(6px, -6px); }
+.deck.leer i { opacity: .25; }
+.deck__count {
+  position: absolute; inset: auto 0 -18px 0; text-align: center;
+  font-size: 12px; font-weight: 800; color: var(--muted);
+}
+
+.trick {
+  display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+  min-width: 200px; min-height: calc(var(--card-h) + 22px);
+}
+.trick__slot { text-align: center; }
+.trick__who { font-size: 11px; font-weight: 700; color: var(--muted); margin-top: 3px; }
+.trick__who.win { color: var(--good); }
+.trick__empty { color: var(--muted); font-size: 13px; align-self: center; padding-top: 40px; }
+
+/* ---------------- Statuszeile und Ansageleiste ---------------- */
+
+.status {
+  text-align: center; font-weight: 700; min-height: 22px;
+  margin: 22px 0 6px; font-size: 14px;
+}
+.status em { font-style: normal; color: var(--accent); }
+
+.bidbar { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-bottom: 6px; }
+.bidbar__hint { width: 100%; text-align: center; color: var(--muted); font-size: 13px; }
+
+/* ---------------- Hand ---------------- */
+
+.hand {
+  position: relative;
+  height: calc(var(--card-h) + 74px);
+  margin-top: 2px;
+}
+
+.card-slot {
+  position: absolute;
+  left: 50%; top: 34px;
+  width: var(--card-w); height: var(--card-h);
+  margin-left: calc(var(--card-w) / -2);
+  transition: transform var(--dur) var(--ease);
+  transform-origin: 50% 130%;
+  will-change: transform;
+}
+.card-slot:hover { z-index: 60 !important; }
+
+/* ---------------- Karte ---------------- */
+
+.card {
+  width: 100%; height: 100%;
+  border-radius: 11px;
+  border: 2.5px solid var(--ink);
+  background: var(--panel);
+  box-shadow: 3px 4px 0 rgba(0,0,0,.16);
+  position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+  user-select: none; -webkit-user-select: none;
+  transition: transform .16s ease-out, box-shadow .16s, filter .2s, opacity .2s;
+}
+
+.hand .card { cursor: pointer; }
+.hand .card:hover { transform: translateY(-16px) scale(1.04); box-shadow: 4px 10px 0 rgba(0,0,0,.18); }
+.hand .card.blocked { filter: grayscale(.8) brightness(.93); opacity: .45; cursor: not-allowed; }
+.hand .card.blocked:hover { transform: translateY(-3px); box-shadow: 3px 4px 0 rgba(0,0,0,.16); }
+.hand .card.best { box-shadow: 3px 4px 0 rgba(0,0,0,.16), 0 0 0 3px var(--good); }
+
+.card__val { font-size: 34px; font-weight: 900; letter-spacing: -.04em; }
+.card__sym { position: absolute; font-size: 12px; font-weight: 900; }
+.card__sym--tl { top: 5px; left: 6px; }
+.card__sym--br { bottom: 5px; right: 6px; transform: rotate(180deg); }
+.card__band {
+  position: absolute; inset: auto 0 0 0; height: 15px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  color: #fff;
+}
+
+.card--rot   { --c: var(--rot); }
+.card--gelb  { --c: var(--gelb); }
+.card--gruen { --c: var(--gruen); }
+.card--blau  { --c: var(--blau); }
+.card--rot, .card--gelb, .card--gruen, .card--blau {
+  color: var(--c);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--c) 14%, var(--panel)), var(--panel));
+}
+.card--rot .card__band, .card--gelb .card__band,
+.card--gruen .card__band, .card--blau .card__band { background: var(--c); }
+
+.card--mage {
+  color: #fff;
+  background: radial-gradient(circle at 50% 32%, #b18cff, #5a2fb8 72%);
+  border-color: #2a1160;
+}
+.card--jester {
+  color: #4a370f;
+  background: radial-gradient(circle at 50% 32%, #ffeeb8, #e0a41f 78%);
+  border-color: #6a4a09;
+}
+.card--mage .card__val, .card--jester .card__val { font-size: 30px; }
+.card--mage .card__band { background: rgba(0,0,0,.3); }
+.card--jester .card__band { background: rgba(0,0,0,.28); color: #fff2cf; }
+
+.card--trump::after {
+  content: "";
+  position: absolute; inset: 3px;
+  border: 2px dashed color-mix(in srgb, var(--accent) 75%, transparent);
+  border-radius: 8px; pointer-events: none;
+}
+
+.card--sm { width: 62px; height: 89px; }
+.card--sm .card__val { font-size: 24px; }
+.card--sm .card__band { height: 12px; font-size: 8px; }
+.card--sm .card__sym { font-size: 10px; }
+
+/* ---------------- Seitenleiste ---------------- */
+
+.panel { display: grid; gap: 12px; min-width: 0; }
+
+.box {
+  background: var(--panel);
+  border: 2px solid var(--line); border-radius: 14px;
+  padding: 11px 12px;
+}
+.box h2 {
+  margin: 0 0 8px; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .09em; color: var(--muted);
+}
+.box h2 + h2 { margin-top: 14px; }
+
+.kv { display: flex; justify-content: space-between; gap: 8px; padding: 2px 0; font-size: 13px; }
+.kv > span { color: var(--muted); }
+.kv > b { font-variant-numeric: tabular-nums; }
+
+.suitrow { display: flex; align-items: center; gap: 7px; margin: 4px 0; font-size: 13px; }
+.suitrow__dot { width: 11px; height: 11px; border-radius: 3px; flex: none; border: 1.5px solid rgba(0,0,0,.25); }
+.suitrow__name { width: 52px; flex: none; }
+.suitrow__bar { flex: 1; height: 9px; background: var(--bg-deep); border-radius: 5px; overflow: hidden; }
+.suitrow__bar i { display: block; height: 100%; border-radius: 5px; }
+.suitrow__n { width: 18px; text-align: right; font-weight: 800; font-variant-numeric: tabular-nums; }
+.suitrow.is-trump .suitrow__name::after { content: " ★"; color: var(--accent); }
+
+.est { display: flex; align-items: baseline; gap: 8px; margin: 6px 0 2px; }
+.est b { font-size: 27px; font-weight: 900; letter-spacing: -.03em; }
+.est span { color: var(--muted); font-size: 12px; }
+
+.chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.chip {
+  font-size: 11px; font-weight: 700;
+  border: 1.5px solid var(--line); border-radius: 999px; padding: 2px 7px;
+  color: var(--muted);
+}
+.chip b { color: var(--ink); }
+.chip--good { border-color: var(--good); color: var(--good); }
+.chip--bad  { border-color: var(--bad);  color: var(--bad); }
+.chip--accent { border-color: var(--accent); color: var(--accent); }
+
+.note { font-size: 12.5px; color: var(--muted); margin: 6px 0 0; }
+.note b { color: var(--ink); }
+
+.log { max-height: 260px; overflow: auto; font-size: 12.5px; }
+.log p { margin: 0 0 4px; padding-left: 13px; text-indent: -13px; color: var(--muted); }
+.log p::before { content: "· "; color: var(--accent); font-weight: 900; }
+.log p b { color: var(--ink); font-weight: 700; }
+
+/* ---------------- Handy ---------------- */
+
+@media (max-width: 900px) {
+  main { grid-template-columns: minmax(0, 1fr); }
+  .ctrl { margin-left: 0; width: 100%; }
+}
+@media (max-width: 560px) {
+  :root { --card-w: 74px; --card-h: 106px; }
+  body { font-size: 14px; }
+  main, .top { padding: 9px; }
+  .middle { gap: 8px; }
+  .seat { flex-basis: 104px; padding: 5px 7px; }
+  .seat__back { display: none; }
+  .card--sm { width: 50px; height: 72px; }
+  .card--sm .card__val { font-size: 19px; }
+  .card__val { font-size: 28px; }
+  input[type=text] { width: 72px; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <span>✦</span> Runecall
+    <small>Prototyp 01 — Geben · Analysieren · Legen</small>
+  </div>
+  <div class="ctrl">
+    <label>Spieler <select id="ctlPlayers"></select></label>
+    <label>Runde <select id="ctlRound"></select></label>
+    <label>Seed <input type="text" id="ctlSeed" value="runecall"></label>
+    <button id="btnDeal" class="primary">Neu geben</button>
+    <button id="btnFan">Stapeln</button>
+    <button id="btnDraw" title="Regelwidrig — nur um das Ziehen einzeln zu sehen">+1 ziehen</button>
+    <button id="btnPanel" class="on">Analyse</button>
+  </div>
+</header>
+
+<main id="main">
+  <section class="table">
+    <div class="seats" id="seats"></div>
+
+    <div class="middle">
+      <div class="pile">
+        <div class="pile__label">Reststapel</div>
+        <div class="deck" id="deck"><i></i><i></i><i></i><div class="deck__count" id="deckCount">0</div></div>
+      </div>
+      <div class="pile" style="flex: 1 1 240px; min-width: 0;">
+        <div class="pile__label">Stich</div>
+        <div class="trick" id="trick"></div>
+      </div>
+      <div class="pile">
+        <div class="pile__label">Trumpf</div>
+        <div id="trumpBox"></div>
+      </div>
+    </div>
+
+    <div class="status" id="status"></div>
+    <div class="bidbar" id="bidbar"></div>
+    <div class="hand" id="hand"></div>
+  </section>
+
+  <aside class="panel" id="panel">
+    <div class="box" id="analysis"></div>
+    <div class="box"><h2>Verlauf</h2><div class="log" id="log"></div></div>
+  </aside>
+</main>
+
+<script>
+"use strict";
+
+/* ==================================================================
+   1. Karten und Deck   (Regelwerk 1)
+================================================================== */
+
+const SUITS = [
+  { id: "rot",   name: "Rot",  sym: "◆", css: "var(--rot)"   },
+  { id: "gelb",  name: "Gelb", sym: "●", css: "var(--gelb)"  },
+  { id: "gruen", name: "Grün", sym: "▲", css: "var(--gruen)" },
+  { id: "blau",  name: "Blau", sym: "■", css: "var(--blau)"  },
+];
+const SUIT = Object.fromEntries(SUITS.map(s => [s.id, s]));
+const NAMES = ["Du", "Ben", "Chris", "Dana", "Emil", "Fee"];
+
+function baueDeck() {
+  const deck = [];
+  for (const s of SUITS) {
+    for (let v = 1; v <= 13; v++) deck.push({ id: s.id + "-" + v, kind: "pip", suit: s.id, value: v });
+  }
+  for (let i = 1; i <= 4; i++) deck.push({ id: "mage-" + i,   kind: "mage" });
+  for (let i = 1; i <= 4; i++) deck.push({ id: "jester-" + i, kind: "jester" });
+  return deck;                                        // 60 Karten
+}
+
+function kartenName(c) {
+  if (c.kind === "mage") return "Magier";
+  if (c.kind === "jester") return "Narr";
+  return SUIT[c.suit].name + " " + c.value;
+}
+
+/* ------------------ Zufall mit Seed (Technik-Empfehlung) ---------- */
+
+function hash32(str) {
+  let h = 2166136261 >>> 0;
+  for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return h >>> 0;
+}
+function mulberry32(a) {
+  return function () {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function mischen(arr, rnd) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(rnd() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/* ==================================================================
+   2. Regeln   (Regelwerk 6)
+================================================================== */
+
+/** Angespielte Farbe: erste Zahlenkarte im Stich. Magier davor => frei. */
+function angespielteFarbe(trick) {
+  for (const p of trick) {
+    if (p.card.kind === "mage") return { suit: null, fest: true };
+    if (p.card.kind === "pip")  return { suit: p.card.suit, fest: true };
+  }
+  return { suit: null, fest: false };                 // bisher nur Narren
+}
+
+/** Bedienpflicht (6.2). Magier und Narr duerfen immer. */
+function darfSpielen(card, hand, led) {
+  if (!led.fest || led.suit === null) return { ok: true };
+  if (card.kind !== "pip") return { ok: true };
+  if (card.suit === led.suit) return { ok: true };
+  const hatFarbe = hand.some(c => c.kind === "pip" && c.suit === led.suit);
+  return hatFarbe
+    ? { ok: false, grund: SUIT[led.suit].name + " muss bedient werden" }
+    : { ok: true };
+}
+
+/** Stichgewinner (6.3), Reihenfolge: Magier, Trumpf, angespielte Farbe, Narr. */
+function stichGewinner(trick, trumpSuit) {
+  const led = angespielteFarbe(trick);
+  const magier = trick.find(p => p.card.kind === "mage");
+  if (magier) return { p: magier, grund: "erster Magier" };
+
+  if (trumpSuit) {
+    const t = trick.filter(p => p.card.kind === "pip" && p.card.suit === trumpSuit);
+    if (t.length) return { p: t.reduce((a, b) => (b.card.value > a.card.value ? b : a)), grund: "höchster Trumpf" };
+  }
+  if (led.suit) {
+    const f = trick.filter(p => p.card.kind === "pip" && p.card.suit === led.suit);
+    if (f.length) return { p: f.reduce((a, b) => (b.card.value > a.card.value ? b : a)), grund: "höchste angespielte Farbe" };
+  }
+  return { p: trick[0], grund: "nur Narren — der erste gewinnt" };
+}
+
+function punkte(bid, tricks) {
+  return bid === tricks ? 20 + 10 * bid : -10 * Math.abs(bid - tricks);
+}
+
+function maxRunden(np) { return Math.floor(60 / np); }
+
+/* ==================================================================
+   3. Zustand
+================================================================== */
+
+let S = null;
+let gen = 0;                                          // bricht alte Timer ab
+let fly = null;                                       // FLIP-Startpose
+
+const $ = sel => document.querySelector(sel);
+const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+function later(fn, ms) {
+  const g = gen;
+  setTimeout(() => { if (g === gen) fn(); }, reduced ? Math.min(ms, 120) : ms);
+}
+
+/** Wie requestAnimationFrame, aber mit Notbremse: in einer versteckten Seite
+ *  (anderer Tab, Bildschirm aus) feuert rAF nie — dann uebernimmt der Timer,
+ *  damit die Karten nicht in ihrer Startpose haengen bleiben. */
+function naechsterFrame(fn) {
+  let erledigt = false;
+  const einmal = () => { if (!erledigt) { erledigt = true; fn(); } };
+  requestAnimationFrame(einmal);
+  setTimeout(einmal, 60);
+}
+
+function log(html) {
+  S.log.unshift(html);
+  if (S.log.length > 60) S.log.pop();
+}
+
+/* ------------------------------ Geben ---------------------------- */
+
+function neuGeben() {
+  gen++;
+  fly = null;
+  $("#hand").innerHTML = "";
+
+  const np    = Number($("#ctlPlayers").value);
+  const round = Number($("#ctlRound").value);
+  const seed  = $("#ctlSeed").value || "runecall";
+
+  const rnd  = mulberry32(hash32(seed + "|" + np + "|" + round));
+  const deck = mischen(baueDeck(), rnd);
+
+  const players = [];
+  for (let i = 0; i < np; i++) {
+    players.push({ name: NAMES[i], hand: [], bid: null, tricks: 0, score: 0 });
+  }
+
+  // Reihum geben, so wie am Tisch: eine Karte pro Spieler pro Durchgang.
+  let k = 0;
+  const dealer = (round - 1) % np;
+  for (let c = 0; c < round; c++) {
+    for (let i = 1; i <= np; i++) players[(dealer + i) % np].hand.push(deck[k++]);
+  }
+  const rest = deck.slice(k);
+
+  S = {
+    seed, np, round, dealer,
+    players, rest,
+    trumpCard: rest.length ? rest[0] : null,
+    trumpSuit: null,
+    trick: [], trickNo: 0,
+    leader: (dealer + 1) % np,
+    turn: (dealer + 1) % np,
+    phase: "trumpf",
+    fanned: true,
+    winnerPi: null,
+    log: [],
+  };
+
+  log("Runde <b>" + round + "</b> mit <b>" + np + "</b> Spielern, Seed <b>" + seed + "</b>. Geber: <b>" + players[dealer].name + "</b>.");
+  bestimmeTrumpf();
+}
+
+/** Trumpfbestimmung (Regelwerk 4). */
+function bestimmeTrumpf() {
+  const tc = S.trumpCard;
+
+  if (!tc) {
+    S.trumpSuit = null;
+    log("Letzte Runde — kein Reststapel, also <b>kein Trumpf</b>.");
+    return starteAnsagen();
+  }
+  if (tc.kind === "jester") {
+    S.trumpSuit = null;
+    log("Aufgedeckt: <b>Narr</b> — in dieser Runde gibt es <b>keinen Trumpf</b>.");
+    return starteAnsagen();
+  }
+  if (tc.kind === "pip") {
+    S.trumpSuit = tc.suit;
+    log("Aufgedeckt: <b>" + kartenName(tc) + "</b> — Trumpf ist <b>" + SUIT[tc.suit].name + "</b>.");
+    return starteAnsagen();
+  }
+
+  // Magier aufgedeckt: der Geber waehlt (4.2).
+  if (S.dealer === 0) {
+    S.phase = "trumpfwahl";
+    log("Aufgedeckt: <b>Magier</b> — du bist Geber und wählst den Trumpf.");
+    render();
+  } else {
+    S.trumpSuit = botWaehltTrumpf(S.dealer);
+    log("Aufgedeckt: <b>Magier</b> — Geber <b>" + S.players[S.dealer].name + "</b> wählt <b>" + SUIT[S.trumpSuit].name + "</b>.");
+    starteAnsagen();
+  }
+}
+
+function botWaehltTrumpf(pi) {
+  const zaehl = {};
+  for (const s of SUITS) zaehl[s.id] = 0;
+  for (const c of S.players[pi].hand) if (c.kind === "pip") zaehl[c.suit] += c.value >= 10 ? 2 : 1;
+  return SUITS.map(s => s.id).reduce((a, b) => (zaehl[b] > zaehl[a] ? b : a));
+}
+
+function handSortieren(hand) {
+  const rang = c => (c.kind === "mage" ? 0 : c.kind === "jester" ? 2 : 1);
+  const farbRang = s => (s === S.trumpSuit ? -1 : SUITS.findIndex(x => x.id === s));
+  hand.sort((a, b) => {
+    const ra = rang(a), rb = rang(b);
+    if (ra !== rb) return ra - rb;
+    if (ra === 1) {
+      const fa = farbRang(a.suit), fb = farbRang(b.suit);
+      if (fa !== fb) return fa - fb;
+      return b.value - a.value;
+    }
+    return a.id < b.id ? -1 : 1;
+  });
+}
+
+/* ------------------------------ Ansagen -------------------------- */
+
+function starteAnsagen() {
+  S.phase = "ansagen";
+  for (const p of S.players) handSortieren(p.hand);
+  S.bidQueue = [];
+  for (let k = 1; k <= S.np; k++) S.bidQueue.push((S.dealer + k) % S.np);   // links vom Geber zuerst
+  render(true);
+  naechsteAnsage();
+}
+
+function naechsteAnsage() {
+  if (!S.bidQueue.length) {
+    S.phase = "spielen";
+    S.turn = S.leader;
+    log("Alle Ansagen stehen. <b>" + S.players[S.leader].name + "</b> eröffnet.");
+    render();
+    return weiter();
+  }
+  const i = S.bidQueue[0];
+  if (i === 0) { render(); return; }                  // auf den Menschen warten
+  render();
+  later(() => {
+    S.bidQueue.shift();
+    S.players[i].bid = botAnsage(i);
+    log("<b>" + S.players[i].name + "</b> sagt <b>" + S.players[i].bid + "</b> an.");
+    naechsteAnsage();
+  }, 420);
+}
+
+function ansagen(n) {
+  S.players[0].bid = n;
+  S.bidQueue.shift();
+  log("<b>Du</b> sagst <b>" + n + "</b> an.");
+  naechsteAnsage();
+}
+
+/** Grobe Schaetzung: reicht fuer den Prototyp, ist kein Bot-Entwurf. */
+function stichWert(c, trumpSuit) {
+  if (c.kind === "mage")   return 1;
+  if (c.kind === "jester") return 0;
+  if (trumpSuit && c.suit === trumpSuit) return c.value >= 10 ? .9 : c.value >= 6 ? .55 : .25;
+  return c.value === 13 ? .8 : c.value === 12 ? .55 : c.value === 11 ? .35 : c.value >= 9 ? .15 : .04;
+}
+function schaetzung(hand, trumpSuit) {
+  return hand.reduce((sum, c) => sum + stichWert(c, trumpSuit), 0);
+}
+function botAnsage(pi) {
+  const e = schaetzung(S.players[pi].hand, S.trumpSuit);
+  return Math.max(0, Math.min(S.round, Math.round(e)));
+}
+
+/* ------------------------------ Stiche --------------------------- */
+
+function weiter() {
+  if (S.phase !== "spielen") return;
+  if (S.trick.length === S.np) { later(stichAuswerten, 950); return; }
+  if (S.turn === 0) { render(); return; }             // Mensch ist dran
+  later(botZug, 620);
+}
+
+function botZug() {
+  if (S.phase !== "spielen" || S.turn === 0) return;
+  const pi = S.turn;
+  const p  = S.players[pi];
+  const led = angespielteFarbe(S.trick);
+  const legal = p.hand.filter(c => darfSpielen(c, p.hand, led).ok);
+  const brauchtStich = p.tricks < p.bid;
+
+  const bewertet = legal.map(c => ({ c, w: stichWert(c, S.trumpSuit) }));
+  bewertet.sort((a, b) => a.w - b.w);
+  const wahl = brauchtStich ? bewertet[bewertet.length - 1].c : bewertet[0].c;
+
+  const seat = document.querySelector('.seat[data-pi="' + pi + '"]');
+  fly = seat ? { id: wahl.id, rect: seat.getBoundingClientRect(), rot: 0 } : null;
+
+  karteSpielen(pi, wahl);
+  weiter();
+}
+
+function karteSpielen(pi, card) {
+  const p = S.players[pi];
+  p.hand.splice(p.hand.indexOf(card), 1);
+  const warLed = angespielteFarbe(S.trick);
+  S.trick.push({ pi, card });
+  const jetztLed = angespielteFarbe(S.trick);
+
+  let zusatz = "";
+  if (!warLed.fest && jetztLed.fest) {
+    zusatz = jetztLed.suit
+      ? " — ab jetzt ist <b>" + SUIT[jetztLed.suit].name + "</b> angespielt"
+      : " — <b>keine</b> Farbe angespielt, alle sind frei";
+  }
+  log("<b>" + p.name + "</b> legt " + kartenName(card) + zusatz + ".");
+
+  S.turn = (S.turn + 1) % S.np;
+  render();
+}
+
+function menschSpielt(card) {
+  if (!card || S.phase !== "spielen" || S.turn !== 0) return;
+  if (S.trick.length >= S.np) return;                 // Stich liegt komplett, Auswertung laeuft noch
+  const hand = S.players[0].hand;
+  const pruefung = darfSpielen(card, hand, angespielteFarbe(S.trick));
+  if (!pruefung.ok) return;
+
+  const slot = document.querySelector('.card-slot[data-card="' + card.id + '"]');
+  fly = slot ? { id: card.id, rect: slot.getBoundingClientRect(), rot: Number(slot.dataset.rot || 0) } : null;
+
+  karteSpielen(0, card);
+  weiter();
+}
+
+function stichAuswerten() {
+  const { p: sieger, grund } = stichGewinner(S.trick, S.trumpSuit);
+  S.players[sieger.pi].tricks++;
+  S.winnerPi = sieger.pi;
+  log("Stich " + (S.trickNo + 1) + ": <b>" + S.players[sieger.pi].name + "</b> gewinnt (" + grund + ").");
+  render();
+
+  later(() => {
+    S.trick = [];
+    S.winnerPi = null;
+    S.trickNo++;
+    S.leader = sieger.pi;
+    S.turn = sieger.pi;
+    if (S.trickNo >= S.round) return rundeEnde();
+    render();
+    weiter();
+  }, 1000);
+}
+
+function rundeEnde() {
+  S.phase = "ende";
+  for (const p of S.players) p.score = punkte(p.bid, p.tricks);
+  const meins = S.players[0];
+  log("Runde vorbei. Du: Ansage <b>" + meins.bid + "</b>, Stiche <b>" + meins.tricks + "</b> → <b>" +
+      (meins.score > 0 ? "+" : "") + meins.score + "</b> Punkte.");
+  render();
+}
+
+/* ==================================================================
+   4. Darstellung
+================================================================== */
+
+function kartenHTML(c, extra) {
+  const trumpfRahmen = (c.kind === "pip" && S && c.suit === S.trumpSuit) ? " card--trump" : "";
+  const kl = (extra || "") + trumpfRahmen;
+  if (c.kind === "mage") {
+    return '<div class="card card--mage' + kl + '" data-card="' + c.id + '">' +
+      '<span class="card__sym card__sym--tl">✦</span><span class="card__val">✦</span>' +
+      '<span class="card__sym card__sym--br">✦</span><div class="card__band">Magier</div></div>';
+  }
+  if (c.kind === "jester") {
+    return '<div class="card card--jester' + kl + '" data-card="' + c.id + '">' +
+      '<span class="card__sym card__sym--tl">✱</span><span class="card__val">✱</span>' +
+      '<span class="card__sym card__sym--br">✱</span><div class="card__band">Narr</div></div>';
+  }
+  const s = SUIT[c.suit];
+  return '<div class="card card--' + c.suit + kl + '" data-card="' + c.id + '">' +
+    '<span class="card__sym card__sym--tl">' + c.value + " " + s.sym + '</span>' +
+    '<span class="card__val">' + c.value + '</span>' +
+    '<span class="card__sym card__sym--br">' + c.value + " " + s.sym + '</span>' +
+    '<div class="card__band">' + s.name + '</div></div>';
+}
+
+function render(dealAnim) {
+  renderSeats();
+  renderMitte();
+  renderStatus();
+  renderBidbar();
+  renderHand(dealAnim);
+  renderAnalyse();
+  $("#log").innerHTML = S.log.map(z => "<p>" + z + "</p>").join("");
+  $("#btnFan").textContent = S.fanned ? "Stapeln" : "Fächern";
+  $("#btnDraw").disabled = !S.rest.length || S.phase === "spielen" || S.phase === "ende";
+}
+
+function renderSeats() {
+  $("#seats").innerHTML = S.players.map((p, i) => {
+    const dran = (S.phase === "spielen" && S.turn === i) ||
+                 (S.phase === "ansagen" && S.bidQueue && S.bidQueue[0] === i);
+    const treffer = S.phase === "ende" ? (p.bid === p.tricks ? " hit" : " miss") : "";
+    const backs = i === 0 ? "" : '<div class="seat__back">' + "<i></i>".repeat(p.hand.length) + "</div>";
+    const pkt = S.phase === "ende" ? '<span>' + (p.score > 0 ? "+" : "") + p.score + " P</span>" : "";
+    return '<div class="seat' + (dran ? " turn" : "") + (i === 0 ? " me" : "") + '" data-pi="' + i + '">' +
+      '<div class="seat__name">' + p.name + (i === S.dealer ? ' <i>Geber ⟳</i>' : "") + '</div>' +
+      '<div class="seat__meta"><span>Ansage <b>' + (p.bid === null ? "–" : p.bid) + '</b></span>' +
+      '<span>Stiche <b class="' + treffer.trim() + '">' + p.tricks + '</b></span>' + pkt + '</div>' +
+      backs + '</div>';
+  }).join("");
+}
+
+function renderMitte() {
+  $("#deckCount").textContent = S.rest.length + " Karten";
+  $("#deck").classList.toggle("leer", !S.rest.length);
+
+  $("#trumpBox").innerHTML = S.trumpCard
+    ? kartenHTML(S.trumpCard, " card--sm")
+    : '<div class="card card--sm" style="border-style:dashed;opacity:.5"><span class="card__val" style="font-size:16px">–</span></div>';
+
+  const t = $("#trick");
+  if (!S.trick.length) {
+    t.innerHTML = '<div class="trick__empty">— noch keine Karte —</div>';
+  } else {
+    t.innerHTML = S.trick.map(p => {
+      const win = S.winnerPi === p.pi;
+      return '<div class="trick__slot">' + kartenHTML(p.card, " card--sm") +
+        '<div class="trick__who' + (win ? " win" : "") + '">' + S.players[p.pi].name + (win ? " ✓" : "") + "</div></div>";
+    }).join("");
+  }
+  applyFly(t);
+}
+
+/** FLIP: die neu gelegte Karte startet dort, wo sie herkam. */
+function applyFly(container) {
+  if (!fly) return;
+  const el = container.querySelector('[data-card="' + fly.id + '"]');
+  if (!el) { fly = null; return; }
+  const to = el.getBoundingClientRect();
+  const dx = fly.rect.left - to.left;
+  const dy = fly.rect.top - to.top;
+  const sc = fly.rect.width / Math.max(1, to.width);
+  el.style.transition = "none";
+  el.style.transform = "translate(" + dx + "px," + dy + "px) rotate(" + fly.rot + "deg) scale(" + sc + ")";
+  el.getBoundingClientRect();                          // Reflow erzwingen
+  naechsterFrame(() => {
+    el.style.transition = "transform var(--dur) var(--ease)";
+    el.style.transform = "";
+  });
+  fly = null;
+}
+
+function renderStatus() {
+  const el = $("#status");
+  if (S.phase === "trumpfwahl") { el.innerHTML = "Magier aufgedeckt — <em>wähle die Trumpffarbe</em>."; return; }
+  if (S.phase === "ansagen") {
+    const i = S.bidQueue[0];
+    el.innerHTML = i === 0
+      ? "<em>Deine Ansage:</em> wie viele Stiche gewinnst du?"
+      : "<em>" + S.players[i].name + "</em> sagt an …";
+    return;
+  }
+  if (S.phase === "spielen") {
+    const led = angespielteFarbe(S.trick);
+    const farbe = led.fest
+      ? (led.suit ? "Angespielt: <em>" + SUIT[led.suit].name + "</em>" : "<em>Keine Farbe</em> angespielt — alle frei")
+      : (S.trick.length ? "Farbe noch <em>offen</em> (nur Narren)" : "Neuer Stich");
+    el.innerHTML = "Stich " + (S.trickNo + 1) + " / " + S.round + " · " + farbe + " · " +
+      (S.turn === 0 ? "<em>du bist am Zug</em>" : S.players[S.turn].name + " ist am Zug");
+    return;
+  }
+  if (S.phase === "ende") {
+    const p = S.players[0];
+    el.innerHTML = p.bid === p.tricks
+      ? "Punktlandung: <em>" + p.tricks + " von " + p.bid + "</em> — " + punkte(p.bid, p.tricks) + " Punkte."
+      : "Daneben: <em>" + p.tricks + "</em> statt " + p.bid + " — " + punkte(p.bid, p.tricks) + " Punkte.";
+    return;
+  }
+  el.textContent = "";
+}
+
+function renderBidbar() {
+  const bar = $("#bidbar");
+  if (S.phase === "trumpfwahl") {
+    bar.innerHTML = SUITS.map(s =>
+      '<button data-suit="' + s.id + '" style="border-color:' + s.css + ';color:' + s.css + '">' + s.sym + " " + s.name + "</button>"
+    ).join("");
+    bar.querySelectorAll("button").forEach(b => b.onclick = () => {
+      S.trumpSuit = b.dataset.suit;
+      log("Du wählst <b>" + SUIT[S.trumpSuit].name + "</b> als Trumpf.");
+      starteAnsagen();
+    });
+    return;
+  }
+  if (S.phase === "ansagen" && S.bidQueue[0] === 0) {
+    const e = schaetzung(S.players[0].hand, S.trumpSuit);
+    const tipp = Math.max(0, Math.min(S.round, Math.round(e)));
+    let html = "";
+    for (let n = 0; n <= S.round; n++) {
+      html += '<button data-bid="' + n + '"' + (n === tipp ? ' class="on"' : "") + ">" + n + "</button>";
+    }
+    bar.innerHTML = html + '<div class="bidbar__hint">0 bis ' + S.round + " · Vorschlag der Analyse: <b>" + tipp + "</b></div>";
+    bar.querySelectorAll("button").forEach(b => b.onclick = () => ansagen(Number(b.dataset.bid)));
+    return;
+  }
+  if (S.phase === "ende") {
+    bar.innerHTML = '<button class="primary" id="btnAgain">Nächste Runde geben</button>';
+    $("#btnAgain").onclick = () => {
+      const next = Math.min(maxRunden(S.np), S.round + 1);
+      $("#ctlRound").value = String(next);
+      neuGeben();
+    };
+    return;
+  }
+  bar.innerHTML = "";
+}
+
+/* ------------------------------ Hand ----------------------------- */
+
+function renderHand() {
+  const layer = $("#hand");
+  const hand = S.players[0].hand;
+  const drin = new Map([...layer.children].map(el => [el.dataset.card, el]));
+
+  // Verschwundene Karten entfernen.
+  for (const [id, el] of drin) if (!hand.some(c => c.id === id)) { el.remove(); drin.delete(id); }
+
+  // Neue Karten anlegen — Startpose ist der Reststapel.
+  const deckR  = $("#deck").getBoundingClientRect();
+  const layerR = layer.getBoundingClientRect();
+  const neue = [];
+  for (const c of hand) {
+    if (drin.has(c.id)) continue;
+    const slot = document.createElement("div");
+    slot.className = "card-slot";
+    slot.dataset.card = c.id;
+    slot.dataset.pending = "1";
+    slot.innerHTML = kartenHTML(c);
+    slot.style.transition = "none";
+    const dx = deckR.left + deckR.width / 2 - (layerR.left + layerR.width / 2);
+    const dy = deckR.top - (layerR.top + 34);
+    slot.style.transform = "translate(" + dx + "px," + dy + "px) rotate(-8deg) scale(.92)";
+    slot.querySelector(".card").onclick = () => menschSpielt(c);
+    layer.appendChild(slot);
+    drin.set(c.id, slot);
+    neue.push(slot);
+  }
+
+  // Spielbarkeit markieren (Regelwerk 6.2) und Gewinnkarten hervorheben.
+  const led = angespielteFarbe(S.trick);
+  const amZug = S.phase === "spielen" && S.turn === 0;
+  for (const c of hand) {
+    const karte = drin.get(c.id).querySelector(".card");
+    const erlaubt = darfSpielen(c, hand, led).ok;
+    karte.classList.toggle("blocked", amZug && !erlaubt);
+    karte.classList.toggle("best", amZug && erlaubt && S.trick.length > 0 && wuerdeFuehren(c));
+  }
+
+  layoutHand();
+  if (neue.length) {
+    layer.getBoundingClientRect();
+    naechsterFrame(() => {
+      for (const el of neue) { el.style.transition = ""; delete el.dataset.pending; }
+      layoutHand(true);
+    });
+  }
+}
+
+/** Faecher-Geometrie — dieselbe Idee wie im Card-Stack-Vorbild. */
+function layoutHand(stagger) {
+  const layer = $("#hand");
+  const hand = S ? S.players[0].hand : [];
+  const n = hand.length;
+  if (!n) return;
+
+  const erste = layer.querySelector(".card-slot");
+  const cw = erste ? erste.offsetWidth : 92;
+  const breite = layer.clientWidth;
+
+  const maxSchritt = cw * .72;
+  const platz = Math.max(cw * .16, breite - cw - 12);
+  const schritt = n > 1 ? Math.min(maxSchritt, platz / (n - 1)) : 0;
+  const gesamt = cw + (n - 1) * schritt;
+  const startX = -gesamt / 2 + cw / 2;
+  const spreizung = Math.min(30, 4.5 * (n - 1));
+  const bogen = Math.min(22, 2.2 * n);
+
+  hand.forEach((c, i) => {
+    const slot = layer.querySelector('.card-slot[data-card="' + c.id + '"]');
+    if (!slot || slot.dataset.pending) return;
+    let x, y, rot;
+    if (S.fanned) {
+      const t = n > 1 ? i / (n - 1) : .5;
+      x = startX + i * schritt;
+      rot = (t - .5) * spreizung;
+      y = Math.pow((t - .5) * 2, 2) * bogen;
+    } else {
+      x = i * 5 - (n - 1) * 2.5;                       // gestapelt, leicht versetzt
+      y = i * 1.6;
+      rot = i * 1.3 - (n - 1) * .65;
+    }
+    slot.style.zIndex = String(i + 1);
+    slot.dataset.rot = rot.toFixed(2);
+    slot.style.transitionDelay = (stagger && !reduced) ? (i * 45) + "ms" : "0ms";
+    slot.style.transform = "translate(" + x.toFixed(1) + "px," + y.toFixed(1) + "px) rotate(" + rot.toFixed(2) + "deg)";
+  });
+}
+
+function wuerdeFuehren(card) {
+  return stichGewinner([...S.trick, { pi: 0, card }], S.trumpSuit).p.pi === 0;
+}
+
+/* ------------------------------ Analyse -------------------------- */
+
+function renderAnalyse() {
+  const hand = S.players[0].hand;
+  const box = $("#analysis");
+  let h = "<h2>Deine Hand</h2>";
+
+  const proFarbe = {};
+  for (const s of SUITS) proFarbe[s.id] = 0;
+  let magier = 0, narren = 0;
+  for (const c of hand) {
+    if (c.kind === "mage") magier++;
+    else if (c.kind === "jester") narren++;
+    else proFarbe[c.suit]++;
+  }
+  const maxN = Math.max(1, ...Object.values(proFarbe));
+
+  for (const s of SUITS) {
+    const n = proFarbe[s.id];
+    h += '<div class="suitrow' + (s.id === S.trumpSuit ? " is-trump" : "") + '">' +
+      '<span class="suitrow__dot" style="background:' + s.css + '"></span>' +
+      '<span class="suitrow__name">' + s.name + "</span>" +
+      '<span class="suitrow__bar"><i style="width:' + (n / maxN * 100) + "%;background:" + s.css + '"></i></span>' +
+      '<span class="suitrow__n">' + n + "</span></div>";
+  }
+  h += '<div class="chips">' +
+    '<span class="chip' + (magier ? " chip--accent" : "") + '">Magier <b>' + magier + "</b></span>" +
+    '<span class="chip' + (narren ? " chip--bad" : "") + '">Narren <b>' + narren + "</b></span>" +
+    '<span class="chip">Trumpf <b>' + (S.trumpSuit ? SUIT[S.trumpSuit].name : "keiner") + "</b></span>" +
+    "</div>";
+
+  /* --- Einschaetzung --- */
+  const e = schaetzung(hand, S.trumpSuit);
+  const tipp = Math.max(0, Math.min(S.round, Math.round(e)));
+  h += "<h2>Einschätzung</h2>" +
+    '<div class="est"><b>' + e.toFixed(1) + "</b><span>erwartete Stiche · Vorschlag <b>" + tipp + "</b></span></div>";
+
+  const top = hand.map(c => ({ c, w: stichWert(c, S.trumpSuit) }))
+                  .sort((a, b) => b.w - a.w).slice(0, 4)
+                  .filter(x => x.w > .1);
+  if (top.length) {
+    h += '<div class="chips">' + top.map(x =>
+      '<span class="chip chip--good">' + kartenName(x.c) + " <b>" + x.w.toFixed(2) + "</b></span>").join("") + "</div>";
+  }
+  if (S.players[0].bid !== null) {
+    const p = S.players[0];
+    const offen = p.bid - p.tricks;
+    h += '<p class="note">Angesagt <b>' + p.bid + "</b>, gewonnen <b>" + p.tricks + "</b> — " +
+      (offen > 0 ? "noch <b>" + offen + "</b> nötig." : offen < 0 ? "<b>" + -offen + "</b> zu viel." : "genau richtig, jetzt <b>ausweichen</b>.") + "</p>";
+  }
+
+  /* --- Lage im aktuellen Stich --- */
+  h += "<h2>Am Zug</h2>";
+  if (S.phase !== "spielen") {
+    h += '<p class="note">Noch kein Stich im Gang.</p>';
+  } else {
+    const led = angespielteFarbe(S.trick);
+    const gesperrt = hand.filter(c => !darfSpielen(c, hand, led).ok);
+    h += '<div class="kv"><span>Angespielt</span><b>' +
+      (led.fest ? (led.suit ? SUIT[led.suit].name : "keine Farbe") : "offen") + "</b></div>";
+    h += '<div class="kv"><span>Spielbar</span><b>' + (hand.length - gesperrt.length) + " von " + hand.length + "</b></div>";
+
+    if (S.trick.length) {
+      const f = stichGewinner(S.trick, S.trumpSuit);
+      h += '<div class="kv"><span>Führt gerade</span><b>' + S.players[f.p.pi].name + " · " + kartenName(f.p.card) + "</b></div>";
+      const schlaeger = hand.filter(c => darfSpielen(c, hand, led).ok && wuerdeFuehren(c));
+      h += schlaeger.length
+        ? '<div class="chips">' + schlaeger.map(c => '<span class="chip chip--good">' + kartenName(c) + "</span>").join("") + "</div>"
+        : '<p class="note">Keine deiner Karten übernimmt den Stich.</p>';
+    }
+    if (gesperrt.length) {
+      h += '<p class="note">Gesperrt durch Bedienpflicht: <b>' + gesperrt.map(kartenName).join(", ") + "</b>.</p>";
+    }
+  }
+
+  box.innerHTML = h;
+}
+
+/* ==================================================================
+   5. Bedienung
+================================================================== */
+
+function fuelleRundenAuswahl() {
+  const np = Number($("#ctlPlayers").value);
+  const max = maxRunden(np);
+  const alt = Number($("#ctlRound").value) || 5;
+  let h = "";
+  for (let r = 1; r <= max; r++) h += "<option>" + r + "</option>";
+  $("#ctlRound").innerHTML = h;
+  $("#ctlRound").value = String(Math.min(alt, max));
+}
+
+(function init() {
+  let h = "";
+  for (let n = 3; n <= 6; n++) h += "<option" + (n === 4 ? " selected" : "") + ">" + n + "</option>";
+  $("#ctlPlayers").innerHTML = h;
+  fuelleRundenAuswahl();
+  $("#ctlRound").value = "5";
+
+  $("#ctlPlayers").onchange = () => { fuelleRundenAuswahl(); neuGeben(); };
+  $("#ctlRound").onchange = neuGeben;
+  $("#ctlSeed").onchange = neuGeben;
+  $("#btnDeal").onclick = neuGeben;
+
+  $("#btnFan").onclick = () => { S.fanned = !S.fanned; layoutHand(true); render(); };
+  $("#btnPanel").onclick = () => {
+    const aus = $("#main").classList.toggle("no-panel");
+    $("#btnPanel").classList.toggle("on", !aus);
+    naechsterFrame(() => layoutHand());
+  };
+  $("#btnDraw").onclick = () => {                      // regelwidrig, nur fuer die Animation
+    if (!S.rest.length) return;
+    const c = S.rest.splice(S.rest.length - 1, 1)[0];
+    S.players[0].hand.push(c);
+    handSortieren(S.players[0].hand);
+    log("<b>Testknopf:</b> " + kartenName(c) + " nachgezogen (regelwidrig).");
+    render();
+  };
+
+  let t = null;
+  window.addEventListener("resize", () => { clearTimeout(t); t = setTimeout(() => layoutHand(), 120); });
+
+  neuGeben();
+})();
+</script>
+</body>
+</html>

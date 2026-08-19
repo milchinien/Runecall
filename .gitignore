@@ -1,0 +1,28 @@
+# Abhängigkeiten
+node_modules/
+.pnpm-store/
+
+# Build-Ergebnisse
+dist/
+build/
+*.tsbuildinfo
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Lokale Konfiguration
+.env
+.env.local
+*.local
+
+# Editor und Betriebssystem
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

@@ -30,6 +30,7 @@ keinen gewinnen will.
 | [docs/04-TECHNIK-EMPFEHLUNG.md](docs/04-TECHNIK-EMPFEHLUNG.md) | Begründete Stack-Wahl und die Schrittfolge bis zur fertigen App. |
 | [docs/05-OFFENE-FRAGEN-RUNDE-2.md](docs/05-OFFENE-FRAGEN-RUNDE-2.md) | Fragerunde 2 — Online, Handy, Grafik, Name. |
 | [docs/06-RECHTLICHES.md](docs/06-RECHTLICHES.md) | Was frei ist (die Regeln) und was nicht (fremde Namen und Bilder). |
+| [docs/07-KARTEN-PROMPTS.md](docs/07-KARTEN-PROMPTS.md) | Prompts für alle 61 Kartenmotive des Standardsets, plus der Vertrag für spätere Kartensets. |
 
 ## Nächster Schritt
 

@@ -1,0 +1,10 @@
+{
+  "name": "@runecall/engine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Regeln von Runecall. Kein DOM, kein Netzwerk, deterministisch.",
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

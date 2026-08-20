@@ -1,0 +1,245 @@
+/* Runecall -- Grundgestaltung.
+   Palette bewusst wie im Prototyp 01, damit beides zusammengehoerig wirkt. */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #f2ece1;
+  --bg-deep: #e5dbc8;
+  --panel: #fffdf7;
+  --ink: #241f18;
+  --muted: #7d7263;
+  --line: #d5c8b1;
+  --accent: #6d3fd1;
+
+  --red: #d84a3c;
+  --yellow: #c9910f;
+  --green: #369a58;
+  --blue: #3a72c6;
+
+  --radius: 10px;
+  --card-w: 60px;
+  --card-h: 86px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1a1712;
+    --bg-deep: #12100c;
+    --panel: #262119;
+    --ink: #f0e9db;
+    --muted: #a2977f;
+    --line: #3d3529;
+    --accent: #a688f5;
+
+    --red: #e8695c;
+    --yellow: #e0ae35;
+    --green: #4fb673;
+    --blue: #5b90e0;
+  }
+}
+
+body {
+  margin: 0;
+  padding: clamp(16px, 4vw, 32px);
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* --- Kopfzeile --------------------------------------------------------- */
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(28px, 6vw, 40px);
+  letter-spacing: -0.02em;
+}
+
+.head__sub {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.head__actions {
+  display: flex;
+  gap: 8px;
+}
+
+button {
+  padding: 9px 16px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+
+button:hover {
+  filter: brightness(1.08);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+button.ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--ink);
+}
+
+/* --- Hinweisblock ------------------------------------------------------ */
+
+main {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.note {
+  margin: 24px 0 0;
+  padding: 16px 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.note p {
+  margin: 0;
+}
+
+.note__next {
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.status {
+  margin: 24px 0 12px;
+  color: var(--muted);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- Karten ------------------------------------------------------------ */
+
+.deck {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+  gap: 8px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  aspect-ratio: 60 / 86;
+  min-height: var(--card-h);
+  padding: 6px 4px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.06);
+  user-select: none;
+}
+
+.card__value {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.rune {
+  width: 14px;
+  height: 22px;
+}
+
+.card--red {
+  color: var(--red);
+  border-color: color-mix(in srgb, var(--red) 40%, var(--line));
+}
+
+.card--yellow {
+  color: var(--yellow);
+  border-color: color-mix(in srgb, var(--yellow) 40%, var(--line));
+}
+
+.card--green {
+  color: var(--green);
+  border-color: color-mix(in srgb, var(--green) 40%, var(--line));
+}
+
+.card--blue {
+  color: var(--blue);
+  border-color: color-mix(in srgb, var(--blue) 40%, var(--line));
+}
+
+.card--mage,
+.card--jester {
+  color: var(--ink);
+  border-color: var(--ink);
+  border-width: 2px;
+}
+
+.card--jester {
+  color: var(--muted);
+  border-color: var(--muted);
+}
+
+.card__glyph {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.card__label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* --- Handy ------------------------------------------------------------- */
+
+@media (max-width: 520px) {
+  :root {
+    --card-w: 48px;
+    --card-h: 70px;
+  }
+
+  .head {
+    align-items: flex-start;
+  }
+
+  .head__actions {
+    width: 100%;
+  }
+
+  .head__actions button {
+    flex: 1;
+  }
+}

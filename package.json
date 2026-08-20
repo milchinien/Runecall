@@ -1,0 +1,21 @@
+{
+  "name": "runecall",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Runecall - Stichkartenspiel fuer PC und Handy. Sage genau voraus, wie viele Stiche du gewinnst.",
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @runecall/client",
+    "build": "npm run build --workspace @runecall/client",
+    "preview": "npm run preview --workspace @runecall/client",
+    "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/client"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.1",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}

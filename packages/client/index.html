@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Runecall — Entwicklungsstand</title>
+    <meta name="description" content="Runecall — Stichkartenspiel für PC und Handy." />
+  </head>
+  <body>
+    <header class="head">
+      <div class="head__title">
+        <h1>Runecall</h1>
+        <p class="head__sub">Sage genau voraus, wie viele Stiche du gewinnst.</p>
+      </div>
+      <div class="head__actions">
+        <button id="shuffle" type="button">Mischen</button>
+        <button id="reset" type="button" class="ghost">Zurücksetzen</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="note">
+        <p>
+          <strong>Noch kein Spiel.</strong> Diese Seite zeigt das Deck aus der Engine und belegt,
+          dass die Werkzeugkette steht: Arbeitsbereiche, strenge Typprüfung, Vite mit sofortigem
+          Neuladen, und die Trennung zwischen Regeln und Darstellung.
+        </p>
+        <p class="note__next">
+          Als Nächstes: Rundenablauf, Stichauswertung, Ansagen und Wertung — mit Tests und einer
+          Textausgabe, in der eine komplette Partie Zug für Zug nachlesbar ist.
+        </p>
+      </section>
+
+      <p id="status" class="status" role="status"></p>
+      <div id="deck" class="deck"></div>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

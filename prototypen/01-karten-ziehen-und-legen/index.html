@@ -344,8 +344,10 @@ main.no-panel .panel { display: none; }
   input[type=text] { width: 72px; }
 }
 </style>
+<style id="miwale-loader-style">#miwale-loader{position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;background:radial-gradient(circle at 50% 22%,#12536b 0,#082c3b 42%,#03151e 100%);color:#edf9fc;font-family:"Segoe UI",system-ui,sans-serif;transition:opacity .45s ease,visibility .45s ease}#miwale-loader.mw-done{opacity:0;visibility:hidden;pointer-events:none}.mw-loader-inner{display:flex;flex-direction:column;align-items:center;gap:18px;text-align:center}.mw-loader-mark{font-size:clamp(42px,8vw,76px);font-weight:800;letter-spacing:-.07em;line-height:1}.mw-loader-mark span{color:#7fe0ee}.mw-loader-wave{position:relative;width:190px;height:3px;overflow:hidden;border-radius:999px;background:rgba(255,255,255,.14)}.mw-loader-wave::after{content:"";position:absolute;inset:0;width:45%;border-radius:inherit;background:linear-gradient(90deg,transparent,#7fe0ee,#fff);animation:mw-load 1.15s ease-in-out infinite}.mw-loader-copy{font-size:11px;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:rgba(237,249,252,.65)}@keyframes mw-load{from{transform:translateX(-110%)}to{transform:translateX(330%)}}@media(prefers-reduced-motion:reduce){.mw-loader-wave::after{animation:none;width:100%;background:#7fe0ee}#miwale-loader{transition:none}}</style>
 </head>
 <body>
+<div id="miwale-loader" role="status" aria-label="Spiel wird geladen"><div class="mw-loader-inner"><div class="mw-loader-mark">mi<span>wa</span>le</div><div class="mw-loader-wave" aria-hidden="true"></div><div class="mw-loader-copy">Spiel wird geladen</div></div></div>
 
 <header class="top">
   <div class="brand">
@@ -1143,5 +1145,6 @@ function fuelleRundenAuswahl() {
   neuGeben();
 })();
 </script>
+<script>(()=>{const s=performance.now();window.addEventListener("load",()=>{const l=document.getElementById("miwale-loader"),w=Math.max(0,700-(performance.now()-s));setTimeout(()=>{if(!l)return;l.classList.add("mw-done");setTimeout(()=>l.remove(),500)},w)},{once:true})})();</script>
 </body>
 </html>

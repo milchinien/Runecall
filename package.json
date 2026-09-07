@@ -11,11 +11,19 @@
     "dev": "npm run dev --workspace @runecall/client",
     "build": "npm run build --workspace @runecall/client",
     "preview": "npm run preview --workspace @runecall/client",
-    "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/client"
+    "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/bots && tsc --noEmit -p packages/client",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "demo": "tsx packages/bots/src/demo.ts",
+    "cards": "node tools/prepare-cards.mjs"
   },
   "devDependencies": {
     "@types/node": "^22.20.1",
+    "@types/three": "^0.185.4",
+    "sharp": "^0.35.3",
+    "tsx": "^4.23.12",
     "typescript": "^5.7.2",
-    "vite": "^6.0.5"
+    "vite": "^6.0.5",
+    "vitest": "^4.1.11"
   }
 }

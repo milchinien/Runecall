@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@runecall/engine": "*"
+    "@runecall/bots": "*",
+    "@runecall/engine": "*",
+    "three": "^0.185.1"
   }
 }

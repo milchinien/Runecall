@@ -5,6 +5,7 @@ node_modules/
 # Build-Ergebnisse
 dist/
 build/
+.vite/
 *.tsbuildinfo
 
 # Tauri
@@ -26,3 +27,9 @@ Thumbs.db
 # Logs
 *.log
 npm-debug.log*
+
+# Zwischenstand der Kartenaufbereitung (nur zum Nachpruefen)
+assets/.kontakt/
+
+# Screenshots aus dem Dev-Server (shotSink in vite.config.ts)
+.shots/

@@ -1,0 +1,13 @@
+{
+  "name": "@runecall/bots",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Runecall - Computergegner in drei Stufen. Sehen nur die eigene Hand.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@runecall/engine": "*"
+  }
+}

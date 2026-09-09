@@ -35,6 +35,7 @@ import {
   CARD_FRAMES,
 } from '../cardart.generated.ts'
 import { SUIT_STYLES } from '../runes.ts'
+import { assetUrl } from '../assets.ts'
 
 /** Der Ausschnitt einer Karte auf der Tafel, schon als Texturkoordinaten. */
 export type CardFace = {
@@ -203,7 +204,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     image.decoding = 'async'
     image.addEventListener('load', () => resolve(image))
     image.addEventListener('error', () => reject(new Error(`Bildtafel ${src} fehlt`)))
-    image.src = src
+    image.src = assetUrl(src)
   })
 }
 

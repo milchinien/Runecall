@@ -36,6 +36,9 @@ const shotSink = (): Plugin => ({
 const port = Number(process.env.PORT) || 5173
 
 export default defineConfig({
+  // Das Spiel liegt auf GitHub Pages unter /Runecall/, nicht auf einer
+  // eigenen Adresse. Mit relativer Basis stimmen die Pfade an beiden Orten.
+  base: './',
   plugins: [shotSink()],
   server: {
     port,

@@ -17,6 +17,7 @@
 import type { Card } from '@runecall/engine'
 
 import { CARD_ART } from './cardart.generated.ts'
+import { assetUrl } from './assets.ts'
 import { SUIT_STYLES, createRune } from './runes.ts'
 
 /** Lesbarer Name einer Karte, fuer Vorlesehilfen und Hinweise. */
@@ -84,7 +85,7 @@ export function createCardBack(): HTMLElement {
 function createArt(src: string): HTMLImageElement {
   const img = document.createElement('img')
   img.className = 'card__art'
-  img.src = src
+  img.src = assetUrl(src)
   img.alt = ''
   img.draggable = false
   return img
@@ -99,6 +100,6 @@ function createArt(src: string): HTMLImageElement {
 export function warmCardArt(): void {
   for (const src of Object.values(CARD_ART)) {
     const img = new Image()
-    img.src = src
+    img.src = assetUrl(src)
   }
 }

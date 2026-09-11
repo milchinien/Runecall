@@ -80,7 +80,7 @@ Laufendes Protokoll. Was hier steht, gilt — bis es hier geändert wird.
 | # | Thema | Entscheidung |
 |---|-------|--------------|
 | 2.1 | Partie beitreten | **Beides:** private Lobby mit Raumcode **und** automatisches Matchmaking. |
-| 2.2 | Serverbetrieb | **Zunächst lokal im eigenen WLAN.** |
+| 2.2 | Serverbetrieb | ~~Zunächst lokal im eigenen WLAN.~~ **Cloudflare Workers, ein Durable Object je Raum** — dauerhaft kostenlos und von überall erreichbar. Das WLAN reichte nicht: Von der HTTPS-Seite aus verbietet der Browser die unverschlüsselte Verbindung ins Heimnetz. Siehe [09-ONLINE.md](09-ONLINE.md). |
 | 2.3 | Konto | **Keins** — nur ein Anzeigename, lokal gemerkt. |
 | 2.4 | Verbindungsverlust | **Bot übernimmt sofort**, Rückkehrer bekommt seinen Platz zurück. |
 | 2.5 | Bots auf freien Plätzen | **Ja**, der Ersteller entscheidet wie viele. |

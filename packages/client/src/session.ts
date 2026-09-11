@@ -26,15 +26,33 @@ import { saveGame, type Settings } from './settings.ts'
 /** Der Mensch sitzt immer auf Platz 0. */
 export const HUMAN = 0
 
+/**
+ * Die Namen der Bots (Entscheidung 2.17).
+ *
+ * Platz 0 ist der Mensch und heisst deshalb "Du" -- die Oberflaeche
+ * unterscheidet nicht, sie liest nur ab.
+ */
+const NAMES = ['Du', 'Ben', 'Chris', 'Dana', 'Emil', 'Fee'] as const
+
 /** Worauf die Oberflaeche gerade wartet. */
 export type Waiting = 'none' | 'bot' | 'trick'
 
+/**
+ * Eine laufende Partie, so wie die Oberflaeche sie sieht.
+ *
+ * Bewusst schmal: Es gibt hier **keinen** Zugang zum vollen `GameState`,
+ * sondern nur `view()` -- die gefilterte Sicht eines einzelnen Spielers.
+ * Damit laesst sich dieselbe Schnittstelle auch dann erfuellen, wenn die
+ * Wahrheit ueber die Partie gar nicht im Browser liegt, sondern auf dem
+ * Server (`online.ts`). Ein Client, der alle Haende kennt, ist ein Client,
+ * mit dem man perfekt spielt -- deshalb kennt er sie nicht einmal lokal.
+ */
 export type Session = {
   readonly settings: Settings
   /** Der Bauplan dieser Partie: Modus, Spielerzahl, Runden, Bot-Stufe. */
   readonly match: MatchConfig
-  readonly seed: number
-  state(): GameState
+  /** Name je Platz. Der eigene Platz heisst immer "Du". */
+  readonly names: readonly string[]
   view(): PlayerView
   waiting(): Waiting
   chooseTrump(suit: Suit): void
@@ -189,8 +207,7 @@ export function createSession(options: SessionOptions, onChange: () => void): Se
   return {
     settings,
     match,
-    seed,
-    state: () => state,
+    names: NAMES.slice(0, state.playerCount),
     view: () => playerView(state, HUMAN),
     waiting: () => waiting,
 

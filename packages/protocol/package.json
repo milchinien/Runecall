@@ -1,0 +1,14 @@
+{
+  "name": "@runecall/protocol",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Runecall - was Client und Server einander sagen. Nur Typen, kein Code.",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@runecall/bots": "*",
+    "@runecall/engine": "*"
+  }
+}

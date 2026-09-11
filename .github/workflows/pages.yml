@@ -28,6 +28,11 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+        env:
+          # Wo der Server fuer Online-Partien steht. Als Repository-Variable
+          # hinterlegt, damit die Adresse nicht im Quelltext haengt -- ohne
+          # sie gilt der Standard aus online.ts. Siehe docs/09-ONLINE.md.
+          VITE_SERVER_URL: ${{ vars.RUNECALL_SERVER_URL }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

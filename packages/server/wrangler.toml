@@ -1,0 +1,21 @@
+# Runecall-Server auf Cloudflare Workers.
+#
+# Ein Durable Object je Raum: Der Raumcode ist der Name des Objekts, also
+# landen alle Spieler mit demselben Code zwangslaeufig im selben Prozess --
+# genau das, was ein autoritativer Server braucht, und ohne eine Zeile
+# Verteilungslogik.
+#
+# SQLite-Speicher ist hier nicht Geschmackssache: Im kostenlosen Tarif sind
+# ausschliesslich Durable Objects mit SQLite-Hintergrund erlaubt.
+
+name = "runecall-server"
+main = "src/index.ts"
+compatibility_date = "2025-01-15"
+
+[[durable_objects.bindings]]
+name = "ROOMS"
+class_name = "RoomDO"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["RoomDO"]

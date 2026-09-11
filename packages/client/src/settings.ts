@@ -20,6 +20,13 @@ import { createRoomCode, type MatchConfig } from './match.ts'
 import { clearStore, readStore, writeStore } from './store.ts'
 
 export type Settings = {
+  /**
+   * Wie man online heisst (Entscheidung 2.3).
+   *
+   * Kein Konto, kein Passwort, keine Anmeldung -- nur ein Name, der auf
+   * diesem Geraet gemerkt wird und ueber dem eigenen Platz steht.
+   */
+  readonly playerName: string
   readonly playerCount: number
   readonly difficulty: Difficulty
   /** Rundenzahl im eigenen Raum; `null` heisst: so viele wie moeglich. */
@@ -35,6 +42,7 @@ export type Settings = {
 }
 
 export const DEFAULT_SETTINGS: Settings = {
+  playerName: '',
   playerCount: 4,
   difficulty: 'normal',
   rounds: null,

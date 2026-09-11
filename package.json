@@ -11,7 +11,7 @@
     "dev": "npm run dev --workspace @runecall/client",
     "build": "npm run build --workspace @runecall/client",
     "preview": "npm run preview --workspace @runecall/client",
-    "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/bots && tsc --noEmit -p packages/client",
+    "typecheck": "tsc --noEmit -p packages/engine && tsc --noEmit -p packages/bots && tsc --noEmit -p packages/protocol && tsc --noEmit -p packages/client && tsc --noEmit -p packages/server",
     "test": "vitest run",
     "test:watch": "vitest",
     "demo": "tsx packages/bots/src/demo.ts",

@@ -12,6 +12,7 @@
   "dependencies": {
     "@runecall/bots": "*",
     "@runecall/engine": "*",
+    "@runecall/protocol": "*",
     "three": "^0.185.1"
   }
 }

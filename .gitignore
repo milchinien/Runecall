@@ -8,6 +8,9 @@ build/
 .vite/
 *.tsbuildinfo
 
+# Oertlicher Zustand des Wrangler-Entwicklungsservers (Raeume, Zwischenbauten)
+packages/server/.wrangler/
+
 # Tauri
 src-tauri/target/
 src-tauri/gen/

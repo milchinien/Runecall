@@ -62,7 +62,8 @@ runecall/
 │  ├─ engine/    Regeln. Kein DOM, kein Netzwerk, deterministisch.
 │  ├─ bots/      Computergegner. Nutzt engine.
 │  ├─ client/    Vite-App: Oberfläche, Grafik, Ton.
-│  └─ server/    Node-Server für Online-Partien. Nutzt engine + bots.
+│  ├─ protocol/  Was Client und Server einander sagen. Nur Typen.
+│  └─ server/    Cloudflare Worker für Online-Partien. Nutzt engine + bots.
 ```
 
 Der springende Punkt: **`engine` läuft an drei Stellen** — in den Tests, im
@@ -71,6 +72,10 @@ DOM noch Netzwerk kennen. Genau das ist auch die Voraussetzung dafür, dass
 Bots tausende Partien in Sekunden durchsimulieren können.
 
 ### Online — eigener Server, autoritativ
+
+*Gebaut. Aus dem Node-Prozess wurde ein Cloudflare Worker mit einem Durable
+Object je Raum — derselbe Aufbau, nur dauerhaft kostenlos zu betreiben. Die
+Einzelheiten stehen in [09-ONLINE.md](09-ONLINE.md).*
 
 Ein Node-Prozess mit WebSocket-Verbindungen. Der Server hält den echten
 Spielzustand und schickt jedem Client **nur dessen eigene Hand** plus die
@@ -127,7 +132,7 @@ macht. Bei Online-Partien vergibt der Server den Startwert.
 | 2 | Bots | nein |
 | 3 | Oberfläche, spielbar auf localhost gegen Bots | nein |
 | 4 | Handy-Layout, PWA-fähig | nein |
-| 5 | Server, Online-Partien | nein |
+| 5 | Server, Online-Partien — **gebaut**, siehe [09-ONLINE.md](09-ONLINE.md) | nein |
 | 6 | Windows-`.exe` | **Rust** nachinstallieren |
 | 7 | Android-App im Store | **Java + Android-SDK** nachinstallieren |
 

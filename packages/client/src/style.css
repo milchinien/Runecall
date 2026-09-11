@@ -793,6 +793,67 @@ button.small {
   outline-offset: 2px;
 }
 
+/* Der Name ist Fliesstext, kein Code: normale Schrift, keine Sperrung, und
+   links ausgerichtet wie jedes andere Eingabefeld auch. */
+.code__input.is-name {
+  width: 100%;
+  font: 600 17px/1.3 system-ui, sans-serif;
+  letter-spacing: normal;
+  text-align: left;
+  text-indent: 0;
+  text-transform: none;
+}
+
+/* --- Wer schon im Raum sitzt -------------------------------------------- */
+
+.seats {
+  display: grid;
+  gap: 6px;
+}
+
+.seats__row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 2px solid var(--line);
+  border-radius: 12px;
+}
+
+/* Ein freier Platz ist eine Zusage, keine Meldung -- er tritt zurueck, bis
+   jemand darauf sitzt. */
+.seats__row.is-empty {
+  border-style: dashed;
+  opacity: 0.55;
+}
+
+.seats__row.is-me {
+  border-color: var(--accent);
+}
+
+.seats__seat {
+  flex: none;
+  width: 24px;
+  color: var(--accent);
+  font: 800 12px/1 system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.seats__who {
+  flex: 1;
+  font: 600 15px/1.3 system-ui, sans-serif;
+}
+
+.seats__state {
+  flex: none;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.08);
+  font: 800 10px/1.2 system-ui, sans-serif;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
 /* --- Die Schicht über dem Tisch ----------------------------------------- */
 
 /*

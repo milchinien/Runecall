@@ -1,0 +1,20 @@
+{
+  "name": "@runecall/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Runecall - autoritativer Server fuer Online-Partien. Ein Durable Object je Raum.",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "@runecall/bots": "*",
+    "@runecall/engine": "*",
+    "@runecall/protocol": "*"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250705.0",
+    "wrangler": "^4.20.0"
+  }
+}

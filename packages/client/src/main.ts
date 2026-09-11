@@ -10,6 +10,8 @@
 import './style.css'
 import { createMenu, type Menu } from './menu.ts'
 import type { MatchConfig } from './match.ts'
+import { joinRoom, type Room } from './online.ts'
+import type { RefusalCode } from '@runecall/protocol'
 import { placementOf, recordRankedResult, tierOf } from './rank.ts'
 import {
   DEFAULT_SETTINGS,
@@ -19,8 +21,8 @@ import {
   saveSettings,
   type Settings,
 } from './settings.ts'
-import { HUMAN, createSession, type Session } from './session.ts'
-import { bootScene, renderTable, resetTableView } from './ui.ts'
+import { createSession, type Session } from './session.ts'
+import { bootScene, renderTable, resetTableView, showToast } from './ui.ts'
 
 const $ = <T extends HTMLElement>(id: string): T => {
   const el = document.getElementById(id)
@@ -30,6 +32,17 @@ const $ = <T extends HTMLElement>(id: string): T => {
 
 let settings: Settings = { ...DEFAULT_SETTINGS, ...loadSettings() }
 let session: Session | null = null
+
+/**
+ * Die offene Verbindung in einen Raum.
+ *
+ * Sie liegt hier und nicht im Menue, weil sie den Bildschirmwechsel
+ * ueberleben muss: Zwischen "Raum eroeffnet" und "Partie laeuft" wechselt die
+ * Anzeige vom Menue an den Tisch, die Verbindung aber bleibt dieselbe.
+ */
+let room: Room | null = null
+/** Warum der Raum nicht zustande kam -- steht im Wartebildschirm. */
+let roomNote: string | null = null
 
 /**
  * Was die letzte gewertete Partie am Rang geaendert hat.
@@ -62,12 +75,20 @@ const menu: Menu = createMenu($('menuScreen'), {
   hasSave: () => loadGame() !== null,
   resume: resumeGame,
   start: startGame,
+  openRoom,
+  leaveRoom,
+  room: () => room,
+  roomNote: () => roomNote,
   quit: closeWindow,
 })
 
 function showMenu(screen?: Parameters<Menu['open']>[0]): void {
   session?.stop()
   session = null
+  // Wer ins Menue zurueckgeht, sitzt nicht mehr am Tisch. Eine Verbindung,
+  // die dann noch offen stuende, liesse den eigenen Platz im Raum belegt --
+  // fuer die anderen sichtbar, aber ohne jemanden dahinter.
+  if (screen !== 'room') leaveRoom()
   $('menu').hidden = false
   $('table').hidden = true
   menu.open(screen)
@@ -122,6 +143,91 @@ function resumeGame(): void {
   )
 }
 
+/* ------------------------------------------------------------------ *
+ * Online
+ * ------------------------------------------------------------------ */
+
+/**
+ * Einen Raum oeffnen oder betreten.
+ *
+ * Beide Wege landen im selben Wartebildschirm. Was sie unterscheidet, ist
+ * `create`: Wer erstellt, legt den Raum an, falls es ihn nicht gibt; wer
+ * beitritt, bekommt eine Absage, statt versehentlich einen zweiten Raum mit
+ * vertipptem Code zu eroeffnen.
+ */
+function openRoom(options: { readonly create: boolean; readonly code: string }): void {
+  leaveRoom()
+  session?.stop()
+  session = null
+  roomNote = null
+
+  rankNote = null
+  counted = false
+
+  room = joinRoom(
+    {
+      code: options.code,
+      name: settings.playerName.trim(),
+      create: options.create,
+      settings,
+      rules: {
+        playerCount: settings.playerCount,
+        rounds: settings.rounds,
+        difficulty: settings.difficulty,
+      },
+      onChange,
+    },
+    {
+      onLobby: () => menu.refresh(),
+
+      onStart(created) {
+        resetTableView()
+        showTable(created)
+      },
+
+      onRefused(reason) {
+        roomNote = refusalText(reason, options.code)
+        room = null
+        menu.refresh()
+      },
+
+      onClosed(reason) {
+        roomNote = reason
+        room = null
+        // Die Partie lief vielleicht schon. Dann steht der Tisch noch, und
+        // die Nachricht gehoert dorthin, wo der Spieler gerade hinsieht.
+        if (session === null) menu.refresh()
+        else showToast(reason)
+      },
+
+      onRejected: (message) => showToast(message),
+    },
+  )
+
+  menu.open('room')
+}
+
+function leaveRoom(): void {
+  room?.leave()
+  room = null
+}
+
+/** Die Absage des Servers in einen Satz uebersetzen, der weiterhilft. */
+function refusalText(reason: RefusalCode, code: string): string {
+  switch (reason) {
+    case 'no-such-room':
+      return `Kein Raum mit dem Code ${code}. Vertippt — oder hat dein Freund den Raum noch gar nicht eröffnet?`
+    case 'room-full':
+      return `Der Raum ${code} ist voll. Der Wirt kann die Spielerzahl erhöhen, dann geht noch jemand hinein.`
+    case 'already-started':
+      return `Im Raum ${code} läuft die Partie schon. Wer nicht von Anfang an dabei war, kommt nicht mehr dazu.`
+    case 'bad-code':
+      return 'Diesen Raumcode gibt es so nicht.'
+    case 'bad-name':
+      return 'Ohne Namen geht es nicht — trag einen ein und versuch es noch einmal.'
+  }
+}
+
 function onChange(): void {
   const current = session
   if (current === null) return
@@ -139,11 +245,11 @@ function onChange(): void {
 function countRankedResult(current: Session): void {
   if (counted || current.match.mode !== 'ranked') return
 
-  const state = current.state()
-  if (state.phase !== 'game-over') return
+  const view = current.view()
+  if (view.phase !== 'game-over') return
 
   counted = true
-  const result = recordRankedResult(placementOf(state.scores, HUMAN))
+  const result = recordRankedResult(placementOf(view.scores, view.you))
   const stand = `${result.rank.points} RP (${tierOf(result.rank.points)})`
 
   rankNote =
@@ -160,7 +266,20 @@ const handlers = {
 
   // Noch eine Partie derselben Art: im eigenen Raum mit denselben
   // Einstellungen, in der Spielersuche mit demselben festen Regelsatz.
+  //
+  // Online geht das nicht im Alleingang -- eine neue Partie braucht alle, die
+  // mitspielen sollen. Dort fuehrt der Weg zurueck in den Warteraum, wo der
+  // Wirt neu startet, sobald wieder alle da sind.
   onNewGame: () => {
+    if (room !== null) {
+      session?.stop()
+      session = null
+      $('menu').hidden = false
+      $('table').hidden = true
+      menu.open('room')
+      return
+    }
+
     const match = session?.match
     if (match === undefined) return showMenu('home')
     startGame(match)

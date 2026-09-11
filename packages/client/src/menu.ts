@@ -18,12 +18,15 @@
  *
  * Zurueck fuehrt immer eine Stufe hoeher, auch mit Escape.
  *
- * **Was hier noch fehlt, ist das Netz.** Der Server steht noch nicht
- * (docs/00-ENTSCHEIDUNGEN.md, Abschnitt G). Die Spielersuche sucht deshalb
+ * **Der eigene Raum laeuft ueber das Netz** (online.ts, packages/server):
+ * "Raum eroeffnen" und "Freund beitreten" fuehren beide in denselben
+ * Wartebildschirm, in dem steht, wer schon da ist. Erst wenn der Wirt
+ * startet, geht es an den Tisch.
+ *
+ * **Die Spielersuche ist noch ohne Netz.** Sie braucht eine Vermittlung
+ * ueber alle Raeume hinweg, nicht nur einen Raum; bis es sie gibt, sucht sie
  * sichtbar, findet niemanden und laesst Bots einspringen -- genau das, was
- * sie spaeter auch tut, wenn zu dieser Zeit wirklich niemand sucht. Das
- * Beitreten mit fremdem Code sagt ehrlich, dass es dafuer den Server braucht,
- * statt eine Verbindung vorzuspielen.
+ * sie spaeter auch tut, wenn zu dieser Zeit wirklich niemand sucht.
  */
 
 import { DIFFICULTIES, type Difficulty } from '@runecall/bots'
@@ -40,6 +43,7 @@ import {
   ROOM_CODE_LENGTH,
   type MatchConfig,
 } from './match.ts'
+import type { Room } from './online.ts'
 import { RANK_POINTS, loadRank, nextTier, tierOf } from './rank.ts'
 import { DIFFICULTY_LABEL, SPEED_OPTIONS, type Settings } from './settings.ts'
 import { showToast } from './ui.ts'
@@ -51,6 +55,7 @@ export type MenuScreen =
   | 'queue'
   | 'create'
   | 'join'
+  | 'room'
   | 'settings'
   | 'quit'
 
@@ -61,6 +66,18 @@ export type MenuDeps = {
   readonly hasSave: () => boolean
   readonly resume: () => void
   readonly start: (match: MatchConfig) => void
+  /**
+   * Einen Raum oeffnen oder betreten.
+   *
+   * Das Menue verbindet sich nicht selbst -- es sagt nur, was es will. Die
+   * Verbindung haelt main.ts, weil sie den Bildschirmwechsel ueberlebt.
+   */
+  readonly openRoom: (options: { readonly create: boolean; readonly code: string }) => void
+  readonly leaveRoom: () => void
+  /** Der Raum, in dem man gerade sitzt -- `null`, wenn keiner. */
+  readonly room: () => Room | null
+  /** Was zuletzt schiefging, wenn der Server nicht mitspielt. */
+  readonly roomNote: () => string | null
   /** Versucht, das Fenster zu schliessen. */
   readonly quit: () => void
 }
@@ -70,6 +87,13 @@ export type Menu = {
   open: (screen?: MenuScreen) => void
   close: () => void
   screen: () => MenuScreen
+  /**
+   * Neu zeichnen, ohne den Bildschirm zu wechseln.
+   *
+   * Gebraucht fuer den Wartebildschirm: Dort aendert sich der Inhalt, weil
+   * jemand anders etwas tut, nicht weil hier jemand klickt.
+   */
+  refresh: () => void
 }
 
 /**
@@ -136,9 +160,14 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
       queue: 'search',
       create: 'home',
       join: 'play',
+      room: 'home',
       settings: 'home',
       quit: 'home',
     }
+
+    // Aus dem Wartebildschirm zurueck heisst: den Raum verlassen. Ihn offen
+    // im Hintergrund zu lassen, waere das eine, was man hier nicht erwartet.
+    if (screen === 'room') deps.leaveRoom()
     go(up[screen])
   }
 
@@ -167,6 +196,8 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
         return createScreen()
       case 'join':
         return joinScreen()
+      case 'room':
+        return roomScreen()
       case 'settings':
         return settingsScreen()
       case 'quit':
@@ -397,27 +428,76 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
       ),
     )
 
+    box.append(nameField())
+
     box.append(
       actionRow([
-        plainButton('Partie starten', () => {
+        // Der Weg mit Freunden: Der Raum geht auf, der Code gilt, und im
+        // Wartebildschirm sieht man, wer hereinkommt.
+        plainButton('Raum eröffnen', () => {
           const now = deps.settings()
-          deps.start(
-            friendsMatch({
-              playerCount: now.playerCount,
-              difficulty: now.difficulty,
-              rounds: now.rounds,
-              roomCode: now.roomCode ?? code,
-            }),
-          )
+          if (now.playerName.trim().length === 0) {
+            showToast('Trag noch einen Namen ein')
+            return
+          }
+          deps.openRoom({ create: true, code: now.roomCode ?? code })
         }),
+        // Der Weg ohne Netz. Er bleibt, weil er der schnellste ist: Wer nur
+        // eine Runde gegen Bots will, soll nicht erst einen Server fragen.
+        plainButton(
+          'Allein gegen Bots',
+          () => {
+            const now = deps.settings()
+            deps.start(
+              friendsMatch({
+                playerCount: now.playerCount,
+                difficulty: now.difficulty,
+                rounds: now.rounds,
+                roomCode: now.roomCode ?? code,
+              }),
+            )
+          },
+          { ghost: true },
+        ),
         plainButton('Zurück', back, { ghost: true }),
       ]),
       note(
-        'Freie Plätze übernehmen Bots — du kannst also sofort allein anfangen. Diese Partie ist nicht gewertet und gibt keine Rangpunkte.',
+        'Sag deinen Freunden den Raumcode — sie kommen über "Spielen → Freund beitreten" dazu. Plätze, die frei bleiben, übernehmen Bots. Diese Partie ist nicht gewertet und gibt keine Rangpunkte.',
       ),
     )
 
     return box
+  }
+
+  /**
+   * Der Anzeigename.
+   *
+   * Kein Konto, kein Passwort (Entscheidung 2.3) -- nur ein Name, der auf
+   * diesem Geraet gemerkt wird. Er steht auf beiden Wegen in den Raum, weil
+   * man ihn auf beiden braucht.
+   */
+  function nameField(): HTMLElement {
+    const group = element('div', 'menu__group')
+
+    const caption = element('span', 'menu__label')
+    caption.append(element('small', null, '00'), document.createTextNode('Dein Name'))
+    group.append(caption)
+
+    const input = document.createElement('input')
+    input.type = 'text'
+    input.className = 'code__input is-name'
+    input.autocomplete = 'off'
+    input.maxLength = 16
+    input.placeholder = 'Wie sollen dich die anderen nennen?'
+    input.value = deps.settings().playerName
+    input.setAttribute('aria-label', 'Dein Name')
+
+    // Bewusst ohne Neuzeichnen: Wer tippt, soll nicht bei jedem Buchstaben
+    // den Eingabezeiger verlieren.
+    input.addEventListener('input', () => deps.change({ playerName: input.value }))
+
+    group.append(input)
+    return group
   }
 
   /**
@@ -430,6 +510,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
    */
   function joinScreen(): HTMLElement {
     const box = section('Freund beitreten')
+    box.append(nameField())
 
     const field = element('div', 'code')
     const input = document.createElement('input')
@@ -484,10 +565,132 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
       return
     }
 
-    // Hier spricht spaeter der Server. Bis dahin ist die ehrliche Antwort,
-    // dass niemand antwortet.
-    joinNote = `Kein Raum mit dem Code ${code} erreichbar. Partien zwischen zwei Geräten brauchen den Runecall-Server — der läuft noch nicht.`
-    render()
+    if (deps.settings().playerName.trim().length === 0) {
+      joinNote = 'Trag noch einen Namen ein — die anderen sollen ja sehen, wer dazugekommen ist.'
+      render()
+      return
+    }
+
+    // Ob es den Raum ueberhaupt gibt, weiss nur der Server. Seine Antwort
+    // kommt als Absage zurueck und landet in `roomNote`.
+    joinNote = null
+    deps.openRoom({ create: false, code })
+  }
+
+  /* ---------------------------------------------------------------- *
+   * Der Warteraum
+   * ---------------------------------------------------------------- */
+
+  /**
+   * Wer schon da ist, und was noch fehlt.
+   *
+   * Derselbe Bildschirm fuer Wirt und Gast -- sie unterscheiden sich in genau
+   * einer Zeile: Der Wirt hat einen Startknopf, der Gast einen Hinweis, auf
+   * wen gewartet wird. Zwei Bildschirme dafuer waeren zwei Bildschirme, die
+   * beim naechsten Umbau auseinanderlaufen.
+   */
+  function roomScreen(): HTMLElement {
+    const box = section('Raum')
+    const room = deps.room()
+    const trouble = deps.roomNote()
+
+    if (trouble !== null) {
+      box.append(note(trouble, 'is-warn'))
+      box.append(
+        actionRow([
+          plainButton('Nochmal versuchen', () => go('join'), { ghost: true }),
+          plainButton('Eigenen Raum erstellen', () => go('create'), { ghost: true }),
+          plainButton('Zurück', back, { ghost: true }),
+        ]),
+      )
+      return box
+    }
+
+    if (room === null || room.status() === 'connecting') {
+      box.append(element('p', 'menu__lead', 'Verbinde mit dem Server …'))
+      box.append(backButton())
+      return box
+    }
+
+    const lobby = room.lobby()
+    if (lobby === null) {
+      box.append(element('p', 'menu__lead', 'Warte auf den Raum …'))
+      box.append(backButton())
+      return box
+    }
+
+    const strip = element('div', 'room')
+    strip.append(element('span', 'room__label', 'Raumcode'), element('b', 'room__code', lobby.code))
+
+    const roomActions = element('div', 'room__actions')
+    roomActions.append(
+      plainButton(
+        'Kopieren',
+        () => {
+          void navigator.clipboard
+            ?.writeText(lobby.code)
+            .then(() => showToast(`Raumcode ${lobby.code} kopiert`))
+            .catch(() => showToast('Kopieren ging nicht — Code abtippen'))
+        },
+        { ghost: true, small: true },
+      ),
+    )
+    strip.append(roomActions)
+    box.append(strip)
+
+    const list = element('div', 'seats')
+    lobby.seats.forEach((occupant, index) => {
+      const row = element('div', 'seats__row')
+      const mine = index === room.seat()
+
+      const who =
+        occupant.kind === 'human'
+          ? mine
+            ? `${occupant.name} (du)`
+            : occupant.name
+          : occupant.kind === 'bot'
+            ? `${occupant.name} · Bot`
+            : 'frei — wartet auf jemanden'
+
+      row.append(element('span', 'seats__seat', `${index + 1}`), element('b', 'seats__who', who))
+
+      if (occupant.kind === 'human' && !occupant.connected) {
+        row.append(element('span', 'seats__state', 'getrennt'))
+      }
+      if (index === lobby.hostSeat) row.append(element('span', 'seats__state', 'Wirt'))
+      if (mine) row.classList.add('is-me')
+      if (occupant.kind === 'empty') row.classList.add('is-empty')
+
+      list.append(row)
+    })
+    box.append(list)
+
+    const humans = lobby.seats.filter((seat) => seat.kind === 'human').length
+    const free = lobby.seats.filter((seat) => seat.kind === 'empty').length
+    const rounds = lobby.rules.rounds
+
+    box.append(
+      note(
+        `${humans} im Raum, ${free} ${free === 1 ? 'Platz' : 'Plätze'} frei · ${lobby.seats.length} am Tisch, ${rounds === null ? 'volle Rundenzahl' : `${rounds} Runden`}.`,
+      ),
+    )
+
+    if (room.isHost()) {
+      box.append(
+        actionRow([
+          plainButton('Partie starten', () => room.start()),
+          plainButton('Raum verlassen', back, { ghost: true }),
+        ]),
+        note('Freie Plätze übernehmen Bots. Starte, sobald alle da sind.'),
+      )
+    } else {
+      box.append(
+        actionRow([plainButton('Raum verlassen', back, { ghost: true })]),
+        note('Der Wirt startet die Partie, sobald alle da sind.'),
+      )
+    }
+
+    return box
   }
 
   function settingsScreen(): HTMLElement {
@@ -607,6 +810,9 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
       stopTimer()
     },
     screen: () => screen,
+    refresh() {
+      if (isOpen()) render()
+    },
   }
 }
 

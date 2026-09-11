@@ -43,10 +43,17 @@ import { createRoom } from './scene/room.ts'
 import { createStage, type Stage } from './scene/stage.ts'
 import { createCardStorm } from './scene/storm.ts'
 import { createTableScene, type TableScene } from './scene/table.ts'
-import { HUMAN, type Session } from './session.ts'
+import type { Session } from './session.ts'
 
-const NAMES = ['Du', 'Ben', 'Chris', 'Dana', 'Emil', 'Fee'] as const
-const nameOf = (seat: number): string => NAMES[seat] ?? `Platz ${seat}`
+/**
+ * Wer an welchem Platz sitzt.
+ *
+ * Gegen Bots stehen hier die festen Namen aus der Sitzung, online die, die
+ * sich die Leute selbst gegeben haben. Der eigene Platz heisst in beiden
+ * Faellen "Du" -- dafuer sorgt die Sitzung, nicht die Darstellung.
+ */
+let names: readonly string[] = []
+const nameOf = (seat: number): string => names[seat] ?? `Platz ${seat}`
 
 const REASON_LABEL = {
   mage: 'erster Magier',
@@ -224,11 +231,11 @@ export function renderTable(current: Session, handlers: TableHandlers): void {
   tableHandlers = handlers
   bootScene()
 
-  const state = current.state()
+  names = current.names
   const view = current.view()
   const frozen = current.waiting() === 'trick'
 
-  $('roundInfo').textContent = `Runde ${state.roundNumber} von ${state.totalRounds}`
+  $('roundInfo').textContent = `Runde ${view.roundNumber} von ${view.totalRounds}`
 
   // Die gemessenen Schildmasse gelten nur bis zur naechsten Aenderung des
   // Textes -- und die passiert genau hier.
@@ -286,7 +293,7 @@ function renderPlates(view: PlayerView, current: Session): void {
     const tally = bid === null || bid === undefined ? '–' : `${view.tricksWon[seat] ?? 0}/${bid}`
 
     setText(el, '.plate__name', nameOf(seat))
-    setText(el, '.plate__avatar', seat === HUMAN ? '◆' : nameOf(seat).slice(0, 1))
+    setText(el, '.plate__avatar', seat === view.you ? '◆' : nameOf(seat).slice(0, 1))
     setText(el, '.plate__score', `${view.scores[seat] ?? 0}`)
 
     // Ein Stich mehr ist das einzige, was sich am Schild waehrend des Spiels
@@ -299,7 +306,7 @@ function renderPlates(view: PlayerView, current: Session): void {
     const scored = view.phase === 'round-end' || view.phase === 'game-over'
     const hit = scored && bid !== null && bid !== undefined && (view.tricksWon[seat] ?? 0) === bid
 
-    el.classList.toggle('is-me', seat === HUMAN)
+    el.classList.toggle('is-me', seat === view.you)
     el.classList.toggle('is-dealer', seat === view.dealer)
     el.classList.toggle('is-turn', isOnTurn(view, seat) && current.waiting() !== 'trick')
     el.classList.toggle('is-winner', current.waiting() === 'trick' && view.lastTrick?.winner === seat)
@@ -411,12 +418,12 @@ function statusText(view: PlayerView, current: Session): string {
 
   switch (view.phase) {
     case 'trump-choice':
-      return view.dealer === HUMAN
+      return view.dealer === view.you
         ? 'Ein Magier liegt offen — wähle die Trumpffarbe.'
         : `${nameOf(view.dealer)} wählt die Trumpffarbe …`
 
     case 'bidding':
-      return view.turn === HUMAN
+      return view.turn === view.you
         ? 'Wie viele Stiche gewinnst du?'
         : `${nameOf(view.turn)} sagt an …`
 
@@ -430,7 +437,7 @@ function statusText(view: PlayerView, current: Session): string {
             : view.currentTrick.length > 0
               ? 'Farbe noch offen'
               : 'neuer Stich'
-      const wer = view.turn === HUMAN ? 'du bist am Zug' : `${nameOf(view.turn)} ist am Zug`
+      const wer = view.turn === view.you ? 'du bist am Zug' : `${nameOf(view.turn)} ist am Zug`
       return `Stich ${view.trickNumber} von ${view.roundNumber} · ${farbe} · ${wer}`
     }
 
@@ -447,7 +454,7 @@ function renderActions(view: PlayerView, current: Session): void {
   const box = $('actions')
   box.replaceChildren()
 
-  if (view.phase === 'trump-choice' && view.dealer === HUMAN) {
+  if (view.phase === 'trump-choice' && view.dealer === view.you) {
     for (const suit of SUITS) {
       const button = document.createElement('button')
       button.type = 'button'
@@ -464,7 +471,7 @@ function renderActions(view: PlayerView, current: Session): void {
     return
   }
 
-  if (view.phase !== 'bidding' || view.turn !== HUMAN) return
+  if (view.phase !== 'bidding' || view.turn !== view.you) return
 
   const estimate = estimateTricks(view)
   const suggestion = current.settings.hint
@@ -554,7 +561,7 @@ function renderHandKeys(view: PlayerView, current: Session): void {
   }
   if (selected !== null && !wanted.has(selected)) selected = null
 
-  const myTurn = view.phase === 'playing' && view.turn === HUMAN && current.waiting() === 'none'
+  const myTurn = view.phase === 'playing' && view.turn === view.you && current.waiting() === 'none'
 
   hand.forEach((card, index) => {
     let button = handKeys.get(card.id)
@@ -614,7 +621,7 @@ function pickCard(cardId: CardId): void {
   const card = view.hand.find((entry) => entry.id === cardId)
   if (card === undefined) return
 
-  if (view.phase !== 'playing' || view.turn !== HUMAN || current.waiting() !== 'none') {
+  if (view.phase !== 'playing' || view.turn !== view.you || current.waiting() !== 'none') {
     renderTable(current, tableHandlers)
     return
   }
@@ -751,7 +758,7 @@ function renderSheet(view: PlayerView, current: Session, handlers: TableHandlers
     const won = view.tricksWon[seat] ?? 0
     const gained = roundScore(bid, won)
     const row = document.createElement('tr')
-    if (seat === HUMAN) row.className = 'is-me'
+    if (seat === view.you) row.className = 'is-me'
     if (bid === won) row.classList.add('is-hit')
 
     for (const text of [nameOf(seat), String(bid), String(won)]) {
@@ -821,13 +828,13 @@ function sheetNote(view: PlayerView): string {
       return `Geteilter Sieg für ${names.slice(0, -1).join(', ')} und ${names.at(-1)} — ${best} Punkte.`
     }
     const winner = winners[0] ?? 0
-    return winner === HUMAN
+    return winner === view.you
       ? `Du gewinnst mit ${best} Punkten.`
       : `${nameOf(winner)} gewinnt mit ${best} Punkten.`
   }
 
-  const bid = view.bids[HUMAN] ?? 0
-  const won = view.tricksWon[HUMAN] ?? 0
+  const bid = view.bids[view.you] ?? 0
+  const won = view.tricksWon[view.you] ?? 0
   const gained = roundScore(bid, won)
   if (bid === won) return `Ansage getroffen — ${gained} Punkte dazu.`
 

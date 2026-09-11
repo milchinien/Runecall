@@ -1,0 +1,51 @@
+# Den Runecall-Server auf Cloudflare Workers veroeffentlichen.
+#
+# Laeuft nur, wenn sich am Server, an der Engine, an den Bots oder am
+# Protokoll etwas geaendert hat -- eine neue Kartengrafik braucht keinen
+# neuen Server.
+#
+# Voraussetzung, einmalig einzurichten:
+#
+#   1. Auf dash.cloudflare.com ein (kostenloses) Konto anlegen.
+#   2. Dort ein API-Token erzeugen mit der Vorlage "Edit Cloudflare Workers".
+#   3. Im GitHub-Repository unter Settings -> Secrets and variables -> Actions
+#      hinterlegen:
+#        - Secret   CLOUDFLARE_API_TOKEN   = das Token
+#        - Secret   CLOUDFLARE_ACCOUNT_ID  = die Konto-Kennung aus dem Dashboard
+#        - Variable RUNECALL_SERVER_URL    = https://runecall-server.<name>.workers.dev
+#
+# Die Variable braucht auch der Client (pages.yml) -- er muss ja wissen,
+# wohin er sich verbinden soll.
+
+name: Deploy server to Cloudflare
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'packages/server/**'
+      - 'packages/engine/**'
+      - 'packages/bots/**'
+      - 'packages/protocol/**'
+      - '.github/workflows/server.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run typecheck
+
+      - uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/server

@@ -9,6 +9,7 @@
 
 import './style.css'
 import './mobile.css'
+import { readInviteCode } from './invite.ts'
 import { createMenu, type Menu } from './menu.ts'
 import type { MatchConfig } from './match.ts'
 import { joinRoom, type Room } from './online.ts'
@@ -316,7 +317,9 @@ function closeWindow(): void {
 //   nicht mehr im Seitenaufbau, sondern in der Szene; sie folgt der
 //   Zeichenflaeche selbst (`ResizeObserver` in scene/stage.ts).
 
-showMenu('home')
+// Wer einen Einladungslink anklickt, soll nicht auf dem Startbildschirm
+// landen und den Code abtippen, den er gerade mitgebracht hat.
+showMenu(readInviteCode() === null ? 'home' : 'join')
 
 // Der Raum steht von Anfang an, auch hinter dem Menue: Er ist die Buehne,
 // nicht der Spielbildschirm. Nebenbei ist die Kartentafel dann schon geladen,

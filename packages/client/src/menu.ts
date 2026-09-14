@@ -43,6 +43,7 @@ import {
   ROOM_CODE_LENGTH,
   type MatchConfig,
 } from './match.ts'
+import { clearInvite, inviteLink, readInviteCode, showInvite } from './invite.ts'
 import type { Room } from './online.ts'
 import { RANK_POINTS, loadRank, nextTier, tierOf } from './rank.ts'
 import { DIFFICULTY_LABEL, SPEED_OPTIONS, type Settings } from './settings.ts'
@@ -108,11 +109,17 @@ const SEARCH_MS = 3800
 const FALLBACK_MS = 1400
 
 export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
-  let screen: MenuScreen = 'home'
+  /**
+   * Wer ueber einen Einladungslink kommt, will beitreten -- nicht erst durch
+   * zwei Bildschirme klicken und den Code abtippen, den er schon mitbringt.
+   */
+  const invited = readInviteCode()
+
+  let screen: MenuScreen = invited === null ? 'home' : 'join'
   let timer: number | null = null
 
   /** Was auf dem Beitreten-Bildschirm steht und was zuletzt herauskam. */
-  let joinCode = ''
+  let joinCode = invited ?? ''
   let joinNote: string | null = null
   /** Wie weit die Spielersuche ist. */
   let searchState: 'searching' | 'filling' = 'searching'
@@ -128,6 +135,19 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
   function change(patch: Partial<Settings>): void {
     deps.change(patch)
     render()
+  }
+
+  /**
+   * Den Einladungslink in die Zwischenablage.
+   *
+   * Der Code steht daneben immer noch da: Wo die Zwischenablage gesperrt ist
+   * -- und das ist sie ohne HTTPS -- bleibt das Abtippen der Weg.
+   */
+  function copyInvite(code: string): void {
+    void navigator.clipboard
+      ?.writeText(inviteLink(code))
+      .then(() => showToast('Einladungslink kopiert'))
+      .catch(() => showToast('Kopieren ging nicht — dann den Code durchsagen'))
   }
 
   function isOpen(): boolean {
@@ -167,7 +187,10 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
 
     // Aus dem Wartebildschirm zurueck heisst: den Raum verlassen. Ihn offen
     // im Hintergrund zu lassen, waere das eine, was man hier nicht erwartet.
-    if (screen === 'room') deps.leaveRoom()
+    if (screen === 'room') {
+      deps.leaveRoom()
+      clearInvite()
+    }
     go(up[screen])
   }
 
@@ -385,6 +408,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
         },
         { ghost: true, small: true },
       ),
+      plainButton('Link kopieren', () => copyInvite(code), { ghost: true, small: true }),
       plainButton(
         'Neuer Code',
         () => {
@@ -440,7 +464,9 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
             showToast('Trag noch einen Namen ein')
             return
           }
-          deps.openRoom({ create: true, code: now.roomCode ?? code })
+          const open = now.roomCode ?? code
+          showInvite(open)
+          deps.openRoom({ create: true, code: open })
         }),
         // Der Weg ohne Netz. Er bleibt, weil er der schnellste ist: Wer nur
         // eine Runde gegen Bots will, soll nicht erst einen Server fragen.
@@ -535,7 +561,13 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
 
     field.append(input)
     box.append(
-      element('p', 'menu__lead', 'Dein Freund erstellt den Raum und sagt dir den Code.'),
+      element(
+        'p',
+        'menu__lead',
+        invited === null
+          ? 'Dein Freund erstellt den Raum und sagt dir den Code.'
+          : 'Du bist eingeladen — der Code steht schon da. Trag nur noch deinen Namen ein.',
+      ),
       field,
       actionRow([
         plainButton('Beitreten', join),
@@ -574,6 +606,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
     // Ob es den Raum ueberhaupt gibt, weiss nur der Server. Seine Antwort
     // kommt als Absage zurueck und landet in `roomNote`.
     joinNote = null
+    showInvite(code)
     deps.openRoom({ create: false, code })
   }
 
@@ -634,6 +667,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
         },
         { ghost: true, small: true },
       ),
+      plainButton('Link kopieren', () => copyInvite(lobby.code), { ghost: true, small: true }),
     )
     strip.append(roomActions)
     box.append(strip)

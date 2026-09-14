@@ -86,6 +86,32 @@ Warteschlange wird verworfen.
 
 ---
 
+## Der Einladungslink
+
+Wer einen Raum eröffnet oder betritt, hat den Code danach in der Adresszeile
+stehen:
+
+```
+https://miwale.com/games/runecall/#A9YW4
+```
+
+Ein Klick darauf führt geradewegs auf „Freund beitreten", mit gefülltem
+Codefeld — es fehlt nur noch der Name. Der Knopf **Link kopieren** steht neben
+dem Code, im Erstellen-Bildschirm wie im Warteraum.
+
+Der Code steht hinter dem Doppelkreuz und nicht in einem Pfad wie
+`/raum/A9YW4`. Das Spiel liegt als Haufen fertiger Dateien auf einem Webserver,
+der nichts weiter tut, als sie herauszugeben; ein Pfad, den es als Datei nicht
+gibt, wäre dort ein 404 — es sei denn, man trägt dem Server eine Umschreibung
+ein, und die gälte dann nur für die eine Adresse. Der Teil hinter `#` kommt
+beim Server gar nicht erst an und wirkt darum überall gleich: auf miwale.com,
+auf GitHub Pages und beim Ausprobieren auf dem eigenen Rechner.
+
+Der Link ist Bequemlichkeit beim Einladen, kein Ersatz für den Server. Den
+Raum hält weiterhin nur das Durable Object.
+
+---
+
 ## Selbst ausprobieren
 
 Zwei Fenster, zwei Befehle:

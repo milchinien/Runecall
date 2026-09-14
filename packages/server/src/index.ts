@@ -27,6 +27,8 @@ export type Env = {
  * absichtlich fest: ein `*` waere hier nichts als Bequemlichkeit.
  */
 const ALLOWED = [
+  'https://miwale.com',
+  'https://www.miwale.com',
   'https://milchinien.github.io',
   'http://localhost:5173',
   'http://localhost:4173',

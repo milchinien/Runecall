@@ -1,0 +1,61 @@
+.mobile-card-face { display: none; }
+button, input, select { touch-action: manipulation; }
+.menu, .overlay { overflow-y: auto; overscroll-behavior: contain; }
+@media (max-width: 900px) {
+  :root { --hand-height: 158px; --mobile-actions: 112px; }
+  button { min-height: 44px; }
+  .menu { padding: max(12px, var(--safe-top)) max(12px, var(--safe-right)) max(12px, var(--safe-bottom)) max(12px, var(--safe-left)); }
+  .menu__panel { margin: auto; padding: 20px; }
+  .menu__row { flex-wrap: wrap; }
+  .bar { top: max(8px, var(--safe-top)); left: max(8px, var(--safe-left)); right: max(8px, var(--safe-right)); }
+  .plates { position: absolute; top: calc(60px + var(--safe-top)); bottom: auto; left: 8px; right: 8px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-content: start; gap: 6px; }
+  .plate { position: relative; top: auto; left: auto; width: auto; height: 64px; min-height: 0; min-width: 0; transform: none !important; padding: 5px 7px; }
+  .plate__avatar { display: none; }
+  .plate { grid-template-columns: minmax(0, 1fr); grid-template-rows: 14px 18px 12px; justify-items: center; row-gap: 0; column-gap: 0; }
+  .plate__name, .plate__tally, .plate__score { grid-column: 1; line-height: 1; }
+  .plate__name { font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+  .plate__tally { font-size: 16px; }
+  .trump { position: absolute; top: calc(190px + var(--safe-top)); left: 10px; transform: none !important; max-width: calc(100% - 20px); }
+  .status { position: absolute; left: 10px; right: 10px; top: auto; bottom: calc(var(--hand-height) + var(--mobile-actions) + 12px + var(--safe-bottom)); width: auto; max-width: none; transform: none !important; font-size: 14px; padding: 8px; }
+  .actions { position: absolute; top: auto; left: 8px; right: 8px; bottom: calc(var(--hand-height) + 8px + var(--safe-bottom)); transform: none !important; width: auto; height: auto; max-height: var(--mobile-actions); overflow-y: auto; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; padding: 4px; pointer-events: auto; }
+  .actions > button, .actions .pill { position: static; transform: none !important; flex: 0 0 auto; min-width: 44px; min-height: 44px; margin: 0; padding: 6px 12px; font-size: 16px; }
+  .actions__hint { position: static; transform: none; width: 100%; order: -1; margin: 0; }
+  .handkeys { position: absolute; inset: auto 0 var(--safe-bottom); height: var(--hand-height); width: 100%; margin: 0; padding: 10px 12px; display: flex; align-items: flex-end; gap: 10px; overflow-x: auto; overflow-y: hidden; pointer-events: auto; touch-action: pan-x; overscroll-behavior-x: contain; background: linear-gradient(180deg, #201729aa, #201729); list-style: none; }
+  .handkeys li { flex: 0 0 auto; position: relative; }
+  .handkey { position: relative; top: auto; left: auto; transform: none !important; width: 84px !important; height: 132px !important; padding: 0; pointer-events: auto; touch-action: pan-x; color: var(--ink); }
+  .handkey .mobile-card-face { display: block; width: 100%; height: 100%; }
+  .handkey.is-selected { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .handkey[aria-disabled='true'] { opacity: .55; }
+  .card__art { width: 100%; height: 100%; object-fit: contain; }
+  .counting { top: calc(228px + var(--safe-top)); bottom: auto; right: 8px; max-height: 120px; width: min(200px, 52vw); overflow-y: auto; }
+  .overlay { padding: 12px; }
+  .sheet { width: 100%; max-height: calc(100dvh - 24px); overflow: auto; padding: 16px; }
+  .sheet__actions { flex-wrap: wrap; }
+  .toast { max-width: calc(100vw - 24px); bottom: calc(var(--hand-height) + 12px + var(--safe-bottom)); }
+}
+@media (max-height: 500px) and (max-width: 1000px) {
+  .menu { align-items: start; }
+  .menu__panel { margin: 0 auto; }
+  .sheet { max-height: calc(100dvh - 16px); overflow-y: auto; }
+}
+
+@media (max-width: 900px) and (max-height: 500px) {
+ :root { --hand-height: 108px; --mobile-actions: 56px; }
+ .plates { top: 56px; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 4px; }
+ .plate { height: 54px; padding: 4px; }
+ .trump { top: 114px; }
+ .handkey { width: 60px !important; height: 96px !important; }
+ .handkeys { padding-top: 6px; }
+ .status { font-size: 12px; padding: 5px; }
+ .counting { top: 56px; max-height: 150px; }
+}
+
+@media (max-width: 600px) and (max-height: 650px) {
+ :root { --hand-height: 112px; --mobile-actions: 92px; }
+ .handkey { width: 64px !important; height: 100px !important; }
+ .handkeys { padding: 6px 10px; }
+ .plate { height: 54px; padding: 4px; }
+ .plates { gap: 4px; }
+ .trump { top: 176px; }
+ .status { font-size: 12px; padding: 6px; }
+}

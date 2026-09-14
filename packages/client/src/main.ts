@@ -8,6 +8,7 @@
  */
 
 import './style.css'
+import './mobile.css'
 import { createMenu, type Menu } from './menu.ts'
 import type { MatchConfig } from './match.ts'
 import { joinRoom, type Room } from './online.ts'

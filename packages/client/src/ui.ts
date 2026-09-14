@@ -35,7 +35,7 @@ import {
 } from '@runecall/engine'
 import { estimateTricks } from '@runecall/bots'
 
-import { cardLabel } from './cardview.ts'
+import { cardLabel, createCardElement } from './cardview.ts'
 import { SUIT_STYLES, createRune } from './runes.ts'
 import { loadCardAtlas } from './scene/atlas.ts'
 import { clamp } from './scene/motion.ts'
@@ -571,6 +571,10 @@ function renderHandKeys(view: PlayerView, current: Session): void {
       button = document.createElement('button')
       button.type = 'button'
       button.className = 'handkey'
+      const face = createCardElement(card)
+      face.classList.add('mobile-card-face')
+      face.setAttribute('aria-hidden', 'true')
+      button.append(face)
       // Der Zuhaenger fragt den Zustand erst beim Klick ab. Wuerde er die
       // Sicht von jetzt festhalten, entschiede beim Klick eine veraltete
       // Lage darueber, ob der Zug erlaubt ist.
@@ -590,7 +594,10 @@ function renderHandKeys(view: PlayerView, current: Session): void {
     button.setAttribute('aria-label', `${cardLabel(card)} — ${position}${state}`)
     button.setAttribute('aria-disabled', String(myTurn && !playable))
     button.dataset['card'] = card.id
-    button.tabIndex = myTurn ? 0 : -1
+    button.classList.toggle('is-selected', selected === card.id)
+    button.tabIndex = myTurn || window.matchMedia('(max-width: 900px)').matches ? 0 : -1
+    // Reordering existing DOM cards must follow the same sorted order as the scene.
+    box.append(button.parentElement!)
   })
 }
 
@@ -635,9 +642,11 @@ function pickCard(cardId: CardId): void {
 
   // Auf dem Telefon hebt der erste Tipp die Karte nur an, erst der zweite
   // spielt sie -- das schuetzt vor Fehlgriffen im engen Faecher (Frage 2.10).
-  if (twoStep && selected !== cardId) {
+  if ((twoStep || window.matchMedia('(max-width: 900px)').matches) && selected !== cardId) {
     selected = cardId
     table?.select(cardId)
+    for (const [id, button] of handKeys) button.classList.toggle('is-selected', id === cardId)
+    showToast(`${cardLabel(card)} — noch einmal tippen zum Ausspielen`)
     return
   }
 
@@ -863,6 +872,12 @@ function anchorOverlay(): void {
   const scene = table
   const current = stage
   if (current === null) return
+  // The phone uses a stable HUD and a scrollable hand, independent of the 3D camera.
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    for (const el of plates.values()) el.style.visibility = ''
+    for (const button of handKeys.values()) button.style.visibility = ''
+    return
+  }
 
   place($('actions'), current.toScreen(ACTION_ANCHOR, anchor))
   placeInside($('status'), current.toScreen(STATUS_ANCHOR, anchor))

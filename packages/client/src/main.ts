@@ -8,9 +8,10 @@
  */
 
 import './style.css'
+import './mobile.css'
 import { createMenu, type Menu } from './menu.ts'
 import type { MatchConfig } from './match.ts'
-import { placementOf, recordRankedResult, tierOf } from './rank.ts'
+import { ordinal, placementOf, plural, recordRankedResult, tierOf } from './rank.ts'
 import {
   DEFAULT_SETTINGS,
   clearGame,
@@ -24,7 +25,7 @@ import { bootScene, renderTable, resetTableView } from './ui.ts'
 
 const $ = <T extends HTMLElement>(id: string): T => {
   const el = document.getElementById(id)
-  if (el === null) throw new Error(`Element #${id} fehlt im Dokument`)
+  if (el === null) throw new Error(`Element #${id} is missing from the document`)
   return el as T
 }
 
@@ -148,8 +149,8 @@ function countRankedResult(current: Session): void {
 
   rankNote =
     result.delta === 0
-      ? `${result.place}. Platz — unter null geht es nicht, du bleibst bei ${stand}.`
-      : `${result.place}. Platz — ${result.delta > 0 ? '+' : ''}${result.delta} Rangpunkte. Du stehst bei ${stand}.`
+      ? `${ordinal(result.place)} place — you can't drop below zero, so you stay at ${stand}.`
+      : `${ordinal(result.place)} place — ${result.delta > 0 ? '+' : '-'}${plural(Math.abs(result.delta), 'rank point', 'rank points')}. You are now at ${stand}.`
 }
 
 const handlers = {

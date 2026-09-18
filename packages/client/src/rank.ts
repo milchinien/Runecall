@@ -62,11 +62,11 @@ export function rankPointsFor(place: number): number {
  * Ziel: Sie ist erreichbar und bleibt erreicht.
  */
 export const RANK_TIERS: readonly { readonly from: number; readonly name: string }[] = [
-  { from: 0, name: 'Funke' },
+  { from: 0, name: 'Spark' },
   { from: 25, name: 'Rune' },
-  { from: 60, name: 'Siegel' },
-  { from: 110, name: 'Zirkel' },
-  { from: 180, name: 'Erzmagier' },
+  { from: 60, name: 'Seal' },
+  { from: 110, name: 'Circle' },
+  { from: 180, name: 'Archwizard' },
 ]
 
 export function tierOf(points: number): string {
@@ -130,6 +130,19 @@ export function recordRankedResult(place: number): RankResult {
 
   saveRank(rank)
   return { place, delta: points - before.points, rank }
+}
+
+/** Englische Ordnungszahl fuer die Anzeige: 1st, 2nd, 3rd, 4th, 11th, 21st. */
+export function ordinal(n: number): string {
+  const tens = n % 100
+  if (tens >= 11 && tens <= 13) return `${n}th`
+  const suffix = ['th', 'st', 'nd', 'rd'][n % 10] ?? 'th'
+  return `${n}${suffix}`
+}
+
+/** Zahl mit passender Einzahl oder Mehrzahl: "1 game", "2 games". */
+export function plural(n: number, one: string, many: string): string {
+  return `${n} ${n === 1 ? one : many}`
 }
 
 function whole(value: unknown): number {

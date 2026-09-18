@@ -40,7 +40,7 @@ import {
   ROOM_CODE_LENGTH,
   type MatchConfig,
 } from './match.ts'
-import { RANK_POINTS, loadRank, nextTier, tierOf } from './rank.ts'
+import { RANK_POINTS, loadRank, nextTier, ordinal, plural, tierOf } from './rank.ts'
 import { DIFFICULTY_LABEL, SPEED_OPTIONS, type Settings } from './settings.ts'
 import { showToast } from './ui.ts'
 
@@ -179,15 +179,15 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
 
     if (deps.hasSave()) {
       box.append(
-        bigButton('Partie fortsetzen', 'Da steht noch eine angefangene Partie', deps.resume),
+        bigButton('Resume game', 'You have an unfinished game', deps.resume),
       )
     }
 
     box.append(
-      bigButton('Spielen', 'Zu Freunden dazustoßen oder Mitspieler suchen', () => go('play')),
-      bigButton('Spiel erstellen', 'Eigener Raum mit Code — alle Regeln frei', () => go('create')),
-      bigButton('Einstellungen', 'Tempo und Hilfen', () => go('settings')),
-      bigButton('Spiel beenden', null, () => go('quit'), { ghost: true }),
+      bigButton('Play', 'Join friends or find other players', () => go('play')),
+      bigButton('Create game', 'Your own room with a code — you set the rules', () => go('create')),
+      bigButton('Settings', 'Speed and assists', () => go('settings')),
+      bigButton('Quit game', null, () => go('quit'), { ghost: true }),
       rankStrip(),
     )
 
@@ -195,13 +195,13 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
   }
 
   function playScreen(): HTMLElement {
-    const box = section('Spielen')
+    const box = section('Play')
 
     box.append(
-      bigButton('Freund beitreten', 'Mit dem Raumcode in die Partie eines Freundes', () =>
+      bigButton('Join a friend', "Enter a room code to join a friend's game", () =>
         go('join'),
       ),
-      bigButton('Spielersuche', 'Gewertete Partie gegen fremde Spieler', () => go('search')),
+      bigButton('Matchmaking', 'Ranked game against other players', () => go('search')),
       backButton(),
     )
 
@@ -217,7 +217,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
    * dieser Bildschirm dafuer umgebaut werden muss.
    */
   function searchScreen(): HTMLElement {
-    const box = section('Spielersuche')
+    const box = section('Matchmaking')
     const rank = loadRank()
 
     const card = document.createElement('button')
@@ -233,15 +233,15 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
     head.className = 'mode__head'
     head.append(
       element('b', 'mode__title', 'Ranked'),
-      element('span', 'mode__badge', 'Gewertet'),
+      element('span', 'mode__badge', 'Rated'),
     )
 
     const rules = document.createElement('ul')
     rules.className = 'mode__rules'
     for (const line of [
-      `Immer ${RANKED_PLAYERS} Spieler`,
-      `Immer ${RANKED_ROUNDS} Runden`,
-      'Bots nur für Plätze, die frei bleiben',
+      `Always ${RANKED_PLAYERS} players`,
+      `Always ${RANKED_ROUNDS} rounds`,
+      'Bots only fill seats that stay empty',
     ]) {
       rules.append(element('li', null, line))
     }
@@ -251,19 +251,19 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
     RANK_POINTS.forEach((value, index) => {
       const cell = element('span', 'mode__point')
       cell.append(
-        element('small', null, `${index + 1}.`),
+        element('small', null, ordinal(index + 1)),
         element('b', value >= 0 ? 'is-gain' : 'is-loss', value > 0 ? `+${value}` : String(value)),
       )
       points.append(cell)
     })
 
-    card.append(head, rules, points, element('span', 'mode__go', 'Spielersuche starten'))
+    card.append(head, rules, points, element('span', 'mode__go', 'Find a match'))
 
     box.append(card, rankStrip(), backButton())
 
     if (rank.games === 0) {
       box.append(
-        note('Deine erste gewertete Partie entscheidet, wo du anfängst — verlieren kostet hier noch nichts.'),
+        note('Your first ranked game decides where you start — losing it costs you nothing.'),
       )
     }
 
@@ -292,10 +292,10 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
         'p',
         'queue__state',
         searchState === 'searching'
-          ? 'Suche Mitspieler …'
-          : 'Keine weiteren Spieler gefunden — Bots übernehmen die freien Plätze.',
+          ? 'Looking for players …'
+          : 'No more players found — bots take the empty seats.',
       ),
-      element('p', 'queue__count', `${found} von ${RANKED_PLAYERS} Plätzen besetzt`),
+      element('p', 'queue__count', `${found} of ${RANKED_PLAYERS} seats filled`),
     )
 
     box.append(panel)
@@ -303,14 +303,14 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
     if (searchState === 'searching') {
       box.append(
         actionRow([
-          plainButton('Suche abbrechen', () => go('search'), { ghost: true }),
+          plainButton('Cancel search', () => go('search'), { ghost: true }),
         ]),
       )
     }
 
     box.append(
       note(
-        `Gewertet: ${RANKED_PLAYERS} Spieler, ${RANKED_ROUNDS} Runden, fester Regelsatz. Der Platz am Ende zählt für deinen Rang.`,
+        `Ranked: ${RANKED_PLAYERS} players, ${RANKED_ROUNDS} rounds, fixed rules. Your final place counts toward your rank.`,
       ),
     )
 
@@ -336,26 +336,26 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
    */
   function createScreen(): HTMLElement {
     const settings = deps.settings()
-    const box = section('Spiel erstellen')
+    const box = section('Create game')
     const code = settings.roomCode ?? createRoomCode()
 
     const room = element('div', 'room')
-    room.append(element('span', 'room__label', 'Raumcode'), element('b', 'room__code', code))
+    room.append(element('span', 'room__label', 'Room code'), element('b', 'room__code', code))
 
     const roomActions = element('div', 'room__actions')
     roomActions.append(
       plainButton(
-        'Kopieren',
+        'Copy',
         () => {
           void navigator.clipboard
             ?.writeText(code)
-            .then(() => showToast(`Raumcode ${code} kopiert`))
-            .catch(() => showToast('Kopieren ging nicht — Code abtippen'))
+            .then(() => showToast(`Room code ${code} copied`))
+            .catch(() => showToast('Could not copy — type the code instead'))
         },
         { ghost: true, small: true },
       ),
       plainButton(
-        'Neuer Code',
+        'New code',
         () => {
           change({ roomCode: createRoomCode() })
         },
@@ -369,27 +369,27 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
 
     box.append(
       choiceGroup(
-        'Spieler',
+        'Players',
         '01',
         [3, 4, 5, 6].map((count) => ({ label: String(count), value: count })),
         settings.playerCount,
         (value) => change({ playerCount: value }),
       ),
       choiceGroup(
-        'Runden',
+        'Rounds',
         '02',
         // Nur Rundenzahlen, die das Deck bei dieser Spielerzahl hergibt --
         // sonst stuende dort eine Zahl, die beim Starten stillschweigend
         // kleiner wuerde. "Alle" ist der Vollausbau bis zur groessten Hand.
         [
           ...[3, 5, 8, 10].filter((value) => value < max).map(numberOption),
-          { label: `Alle (${max})`, value: null as number | null },
+          { label: `All (${max})`, value: null as number | null },
         ],
         settings.rounds !== null && settings.rounds < max ? settings.rounds : null,
         (value) => change({ rounds: value }),
       ),
       choiceGroup(
-        'Gegner',
+        'Bots',
         '03',
         DIFFICULTIES.map((d) => ({ label: DIFFICULTY_LABEL[d], value: d as Difficulty })),
         settings.difficulty,
@@ -399,7 +399,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
 
     box.append(
       actionRow([
-        plainButton('Partie starten', () => {
+        plainButton('Start game', () => {
           const now = deps.settings()
           deps.start(
             friendsMatch({
@@ -410,10 +410,10 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
             }),
           )
         }),
-        plainButton('Zurück', back, { ghost: true }),
+        plainButton('Back', back, { ghost: true }),
       ]),
       note(
-        'Freie Plätze übernehmen Bots — du kannst also sofort allein anfangen. Diese Partie ist nicht gewertet und gibt keine Rangpunkte.',
+        'Bots take the empty seats — so you can start right away on your own. This game is unranked and earns no rank points.',
       ),
     )
 
@@ -429,7 +429,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
    * mit Bots nicht bedient.
    */
   function joinScreen(): HTMLElement {
-    const box = section('Freund beitreten')
+    const box = section('Join a friend')
 
     const field = element('div', 'code')
     const input = document.createElement('input')
@@ -439,7 +439,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
     input.spellcheck = false
     input.maxLength = ROOM_CODE_LENGTH
     input.placeholder = '·'.repeat(ROOM_CODE_LENGTH)
-    input.setAttribute('aria-label', 'Raumcode')
+    input.setAttribute('aria-label', 'Room code')
 
     // Der Eingegebene ueberlebt das Neuzeichnen. Wer sich vertippt hat, soll
     // die eine falsche Stelle aendern und nicht den ganzen Code neu suchen.
@@ -454,11 +454,11 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
 
     field.append(input)
     box.append(
-      element('p', 'menu__lead', 'Dein Freund erstellt den Raum und sagt dir den Code.'),
+      element('p', 'menu__lead', 'Your friend creates the room and tells you the code.'),
       field,
       actionRow([
-        plainButton('Beitreten', join),
-        plainButton('Zurück', back, { ghost: true }),
+        plainButton('Join', join),
+        plainButton('Back', back, { ghost: true }),
       ]),
     )
 
@@ -466,7 +466,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
       box.append(note(joinNote, 'is-warn'))
       box.append(
         actionRow([
-          plainButton('Stattdessen eigenen Raum erstellen', () => go('create'), { ghost: true }),
+          plainButton('Create your own room instead', () => go('create'), { ghost: true }),
         ]),
       )
     }
@@ -479,24 +479,24 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
     const code = joinCode
 
     if (!isRoomCode(code)) {
-      joinNote = `Ein Raumcode hat ${ROOM_CODE_LENGTH} Zeichen — ${code.length} ${code.length === 1 ? 'ist' : 'sind'} es bisher.`
+      joinNote = `A room code has ${ROOM_CODE_LENGTH} characters — you have entered ${plural(code.length, 'character', 'characters')} so far.`
       render()
       return
     }
 
     // Hier spricht spaeter der Server. Bis dahin ist die ehrliche Antwort,
     // dass niemand antwortet.
-    joinNote = `Kein Raum mit dem Code ${code} erreichbar. Partien zwischen zwei Geräten brauchen den Runecall-Server — der läuft noch nicht.`
+    joinNote = `No room with the code ${code} could be reached. Games between two devices need the Runecall server — it is not running yet.`
     render()
   }
 
   function settingsScreen(): HTMLElement {
     const settings = deps.settings()
-    const box = section('Einstellungen')
+    const box = section('Settings')
 
     box.append(
       choiceGroup(
-        'Tempo',
+        'Speed',
         '01',
         SPEED_OPTIONS.map((option) => ({ label: option.label, value: option.ms })),
         settings.speed,
@@ -506,15 +506,15 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
 
     const switches = element('div', 'menu__switches')
     switches.append(
-      toggle('Ansage-Hilfe — schätzt deine Handstärke', settings.hint, (on) => change({ hint: on }),
+      toggle('Bid assist — estimates your hand strength', settings.hint, (on) => change({ hint: on }),
       ),
-      toggle('Kartenzähl-Hilfe — zeigt gefallene Karten', settings.counting, (on) => change({ counting: on }),
+      toggle('Card counter — shows cards already played', settings.counting, (on) => change({ counting: on }),
       ),
     )
 
-    box.append(switches, actionRow([plainButton('Zurück', back, { ghost: true })]))
+    box.append(switches, actionRow([plainButton('Back', back, { ghost: true })]))
     box.append(
-      note('Tempo und Hilfen gelten sofort, auch in einer laufenden Partie.'),
+      note('Speed and assists apply immediately, even in a game in progress.'),
     )
 
     return box
@@ -530,28 +530,28 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
    * schliesst derselbe Knopf das Fenster wirklich.
    */
   function quitScreen(): HTMLElement {
-    const box = section('Spiel beenden')
+    const box = section('Quit game')
 
     if (!quitTried) {
       box.append(
-        element('p', 'menu__lead', 'Runecall beenden?'),
+        element('p', 'menu__lead', 'Quit Runecall?'),
         actionRow([
-          plainButton('Beenden', () => {
+          plainButton('Quit', () => {
             quitTried = true
             deps.quit()
             // Ob das Fenster wirklich zugeht, laesst sich nicht abfragen --
             // und wenn es zugeht, liest den Abschied ohnehin niemand mehr.
             render()
           }),
-          plainButton('Zurück', back, { ghost: true }),
+          plainButton('Back', back, { ghost: true }),
         ]),
       )
       return box
     }
 
     box.append(
-      element('p', 'menu__lead', 'Bis bald — du kannst den Tab jetzt schließen.'),
-      actionRow([plainButton('Doch weiterspielen', () => go('home'), { ghost: true })]),
+      element('p', 'menu__lead', 'See you soon — you can close the tab now.'),
+      actionRow([plainButton('Keep playing', () => go('home'), { ghost: true })]),
     )
     return box
   }
@@ -575,8 +575,8 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
         'span',
         'rankstrip__note',
         rank.games === 0
-          ? 'noch keine gewertete Partie'
-          : `${rank.games} ${rank.games === 1 ? 'Partie' : 'Partien'} · ${rank.wins} ${rank.wins === 1 ? 'Sieg' : 'Siege'}${next === null ? '' : ` · ${next.from - rank.points} bis ${next.name}`}`,
+          ? 'no ranked games yet'
+          : `${plural(rank.games, 'game', 'games')} · ${plural(rank.wins, 'win', 'wins')}${next === null ? '' : ` · ${next.from - rank.points} to ${next.name}`}`,
       ),
     )
 
@@ -584,7 +584,7 @@ export function createMenu(root: HTMLElement, deps: MenuDeps): Menu {
   }
 
   function backButton(): HTMLElement {
-    return actionRow([plainButton('Zurück', back, { ghost: true })])
+    return actionRow([plainButton('Back', back, { ghost: true })])
   }
 
   /* ---------------------------------------------------------------- *

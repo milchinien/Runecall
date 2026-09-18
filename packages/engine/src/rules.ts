@@ -153,7 +153,7 @@ function highestPip(trick: readonly Play[], suit: Suit): Play | null {
 export function trickWinner(trick: readonly Play[], trump: Suit | null): TrickResult {
   const first = trick[0]
   if (first === undefined) {
-    throw new RangeError('Ein leerer Stich hat keinen Gewinner')
+    throw new RangeError('An empty trick has no winner')
   }
 
   const mage = trick.find((play) => play.card.kind === 'mage')

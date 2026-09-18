@@ -118,11 +118,15 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     height = Math.max(1, Math.round(rect.height))
 
     const aspect = width / height
+    const portrait = width <= 760 && height > width
+    camera.position.copy(portrait ? new Vector3(0, 8, 3.8) : EYE)
+    camera.lookAt(LOOK)
+    const minAspect = portrait ? 1.05 : MIN_ASPECT
     camera.aspect = aspect
     camera.fov =
-      aspect >= MIN_ASPECT
+      aspect >= minAspect
         ? BASE_FOV
-        : (2 * Math.atan((Math.tan((BASE_FOV / 2) * (Math.PI / 180)) * MIN_ASPECT) / aspect) * 180) /
+        : (2 * Math.atan((Math.tan((BASE_FOV / 2) * (Math.PI / 180)) * minAspect) / aspect) * 180) /
           Math.PI
     camera.updateProjectionMatrix()
 
@@ -190,7 +194,7 @@ export function createStage(canvas: HTMLCanvasElement): Stage {
     slowFrames = 0
     pixelRatio = Math.max(1, pixelRatio - 0.25)
     layout()
-    console.info(`Runecall: Aufloesung auf ${pixelRatio.toFixed(2)} gesenkt (${smoothed.toFixed(0)} B/s)`)
+    console.info(`Runecall: resolution lowered to ${pixelRatio.toFixed(2)} (${smoothed.toFixed(0)} fps)`)
   }
 
   handle = requestAnimationFrame(frame)

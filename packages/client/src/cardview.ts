@@ -22,8 +22,8 @@ import { SUIT_STYLES, createRune } from './runes.ts'
 
 /** Lesbarer Name einer Karte, fuer Vorlesehilfen und Hinweise. */
 export function cardLabel(card: Card): string {
-  if (card.kind === 'mage') return 'Magier'
-  if (card.kind === 'jester') return 'Narr'
+  if (card.kind === 'mage') return 'Wizard'
+  if (card.kind === 'jester') return 'Jester'
   return `${SUIT_STYLES[card.suit].label} ${card.value}`
 }
 
@@ -61,7 +61,7 @@ export function createCardElement(card: Card): HTMLElement {
 
   const label = document.createElement('span')
   label.className = 'card__label'
-  label.textContent = card.kind === 'mage' ? 'Magier' : 'Narr'
+  label.textContent = card.kind === 'mage' ? 'Wizard' : 'Jester'
 
   el.append(glyph, label)
   return el

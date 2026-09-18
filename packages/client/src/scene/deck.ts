@@ -138,7 +138,7 @@ function createBlobTexture(): Texture {
   canvas.height = size
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer den Kartenschatten')
+  if (ctx === null) throw new Error('No 2D context for the card shadow')
 
   const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
   gradient.addColorStop(0, 'rgba(255, 255, 255, 0.9)')
@@ -290,7 +290,7 @@ export function createPileMat(): Mesh {
   canvas.height = size
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer die Ablage')
+  if (ctx === null) throw new Error('No 2D context for the discard area')
 
   const gradient = ctx.createRadialGradient(
     size / 2,

@@ -822,7 +822,13 @@ export function createTableScene(
   /* --- Bild fuer Bild ------------------------------------------------ */
 
   const stopFrames = stage.onFrame((dt) => {
-    for (const piece of pieces.values()) advance(piece, dt)
+    const mobile = window.matchMedia('(max-width: 900px)').matches
+    for (const [key, piece] of pieces) {
+      advance(piece, dt)
+      const domHand = mobile && key.startsWith('hand:')
+      piece.body.mesh.visible = !domHand
+      if (domHand) piece.body.shade.visible = false
+    }
   })
 
   function advance(piece: Piece, dt: number): void {
@@ -990,6 +996,7 @@ export function createTableScene(
   }
 
   function onPointerDown(event: PointerEvent): void {
+    if (event.button !== 0 || dragging !== null || window.matchMedia('(max-width: 900px)').matches) return
     const id = pickAt(event.clientX, event.clientY)
     if (id === null) return
 
@@ -1009,6 +1016,7 @@ export function createTableScene(
   }
 
   function onPointerMove(event: PointerEvent): void {
+    if (dragging !== null && event.pointerId !== dragging.pointerId) return
     if (dragging === null) {
       if (event.pointerType === 'touch') return
       handlers.onHover(pickAt(event.clientX, event.clientY))
@@ -1035,6 +1043,7 @@ export function createTableScene(
   }
 
   function onPointerUp(event: PointerEvent): void {
+    if (dragging !== null && event.pointerId !== dragging.pointerId) return
     const drag = dragging
     dragging = null
     if (drag === null) return
@@ -1059,7 +1068,14 @@ export function createTableScene(
   }
 
   function onPointerCancel(): void {
+    const drag = dragging
     dragging = null
+    if (drag !== null) {
+      const piece = pieces.get(`hand:${drag.cardId}`)
+      const index = handOrder.findIndex(card => card.id === drag.cardId)
+      if (piece !== undefined && index >= 0) moveTo(piece, handPose(index, handOrder.length), SORT, { ease: easeOutCubic })
+      if (stage.canvas.hasPointerCapture(drag.pointerId)) stage.canvas.releasePointerCapture(drag.pointerId)
+    }
     handlers.onHover(null)
   }
 

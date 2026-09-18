@@ -1524,7 +1524,8 @@ button.small {
   }
 
   .menu__label {
-    width: 62px;
+    width: 70px;
+    letter-spacing: 0.02em;
   }
 }
 
@@ -1684,7 +1685,7 @@ button:active { transform: translateY(4px); box-shadow: 0 3px 0 #b46d10, 0 6px 1
 .plate__name { grid-row: 1; color: #fff; font-size: 11px; }
 .plate__tally { grid-row: 2; font-size: 19px; line-height: 1; }
 .plate__score { grid-row: 3; }
-.plate__score::after { content: ' PKT'; font-size: 8px; opacity: 0.72; }
+.plate__score::after { content: ' PTS'; font-size: 8px; opacity: 0.72; }
 .plate.is-me { background: linear-gradient(150deg, #e93948, #991732); }
 .plate.is-turn .plate__avatar { animation: avatar-pop 0.8s ease-in-out infinite alternate; }
 

@@ -146,7 +146,7 @@ function chooseCard(view: PlayerView, difficulty: Difficulty, rng: Rng): CardId 
   const first = legal[0]
 
   if (first === undefined) {
-    throw new Error('Kein erlaubter Zug -- das darf die Engine nicht zulassen')
+    throw new Error('No legal move -- the engine must never allow this')
   }
   if (legal.length === 1) return first.id
 
@@ -223,7 +223,7 @@ function weakest(cards: readonly Card[], rate: (card: Card) => number): Card {
 
 function pickBy(cards: readonly Card[], better: (a: Card, b: Card) => boolean): Card {
   const first = cards[0]
-  if (first === undefined) throw new Error('Auswahl aus einer leeren Kartenmenge')
+  if (first === undefined) throw new Error('Cannot pick from an empty set of cards')
 
   let best = first
   for (const card of cards) {

@@ -53,9 +53,9 @@ export const DEFAULT_SETTINGS: Settings = {
 }
 
 export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
-  easy: 'Leicht',
+  easy: 'Easy',
   normal: 'Normal',
-  hard: 'Schwer',
+  hard: 'Hard',
 }
 
 /**
@@ -67,9 +67,9 @@ export const DIFFICULTY_LABEL: Record<Difficulty, string> = {
  * noch einmal gut eine Drittelsekunde dauert.
  */
 export const SPEED_OPTIONS: readonly { readonly label: string; readonly ms: number }[] = [
-  { label: 'Ruhig', ms: 1600 },
+  { label: 'Relaxed', ms: 1600 },
   { label: 'Normal', ms: 1000 },
-  { label: 'Zügig', ms: 550 },
+  { label: 'Fast', ms: 550 },
 ]
 
 /**

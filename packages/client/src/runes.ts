@@ -17,7 +17,7 @@
 import type { Suit } from '@runecall/engine'
 
 export type SuitStyle = {
-  /** Anzeigename auf Deutsch. */
+  /** Anzeigename auf Englisch. */
   readonly label: string
   /** Name der Rune -- taucht in Tooltips und der Regelhilfe auf. */
   readonly runeName: string
@@ -27,17 +27,17 @@ export type SuitStyle = {
 
 export const SUIT_STYLES: Record<Suit, SuitStyle> = {
   // Kenaz -- die Fackel. Feuer, also Rot.
-  red: { label: 'Rot', runeName: 'Kenaz', runePath: 'M7.5 2 L2.5 8 L7.5 14' },
+  red: { label: 'Red', runeName: 'Kenaz', runePath: 'M7.5 2 L2.5 8 L7.5 14' },
   // Sowilo -- die Sonne. Gelb.
-  yellow: { label: 'Gelb', runeName: 'Sowilo', runePath: 'M7.5 2 L3 6 L7 10 L2.5 14' },
+  yellow: { label: 'Yellow', runeName: 'Sowilo', runePath: 'M7.5 2 L3 6 L7 10 L2.5 14' },
   // Berkano -- die Birke. Gruen.
   green: {
-    label: 'Grün',
+    label: 'Green',
     runeName: 'Berkano',
     runePath: 'M2.5 2 L2.5 14 M2.5 2 L7.5 5 L2.5 8 M2.5 8 L7.5 11 L2.5 14',
   },
   // Laguz -- das Wasser. Blau.
-  blue: { label: 'Blau', runeName: 'Laguz', runePath: 'M3 2 L3 14 M3 2 L7.5 6' },
+  blue: { label: 'Blue', runeName: 'Laguz', runePath: 'M3 2 L3 14 M3 2 L7.5 6' },
 }
 
 /** Baut das SVG-Element fuer die Rune einer Farbe. */

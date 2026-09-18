@@ -11,7 +11,9 @@ import { describe, expect, it } from 'vitest'
 import {
   RANK_POINTS,
   nextTier,
+  ordinal,
   placementOf,
+  plural,
   rankPointsFor,
   recordRankedResult,
   tierOf,
@@ -74,13 +76,22 @@ describe('Rangstand', () => {
   })
 
   it('benennt die Stufen aufsteigend', () => {
-    expect(tierOf(0)).toBe('Funke')
-    expect(tierOf(24)).toBe('Funke')
+    expect(tierOf(0)).toBe('Spark')
+    expect(tierOf(24)).toBe('Spark')
     expect(tierOf(25)).toBe('Rune')
-    expect(tierOf(1000)).toBe('Erzmagier')
+    expect(tierOf(1000)).toBe('Archwizard')
 
     expect(nextTier(0)?.name).toBe('Rune')
     expect(nextTier(1000)).toBeNull()
+  })
+
+  it('schreibt Plaetze und Mengen englisch', () => {
+    expect([1, 2, 3, 4, 11, 12, 13, 21, 22, 103].map(ordinal)).toEqual([
+      '1st', '2nd', '3rd', '4th', '11th', '12th', '13th', '21st', '22nd', '103rd',
+    ])
+    expect(plural(1, 'game', 'games')).toBe('1 game')
+    expect(plural(0, 'game', 'games')).toBe('0 games')
+    expect(plural(2, 'win', 'wins')).toBe('2 wins')
   })
 })
 

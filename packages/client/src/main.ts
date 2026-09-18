@@ -8,12 +8,13 @@
  */
 
 import './style.css'
+import './mobile.css'
 import { readInviteCode } from './invite.ts'
 import { createMenu, type Menu } from './menu.ts'
 import type { MatchConfig } from './match.ts'
 import { joinRoom, type Room } from './online.ts'
 import type { RefusalCode } from '@runecall/protocol'
-import { placementOf, recordRankedResult, tierOf } from './rank.ts'
+import { ordinal, placementOf, plural, recordRankedResult, tierOf } from './rank.ts'
 import {
   DEFAULT_SETTINGS,
   clearGame,
@@ -27,7 +28,7 @@ import { bootScene, renderTable, resetTableView, showToast } from './ui.ts'
 
 const $ = <T extends HTMLElement>(id: string): T => {
   const el = document.getElementById(id)
-  if (el === null) throw new Error(`Element #${id} fehlt im Dokument`)
+  if (el === null) throw new Error(`Element #${id} is missing from the document`)
   return el as T
 }
 
@@ -217,15 +218,15 @@ function leaveRoom(): void {
 function refusalText(reason: RefusalCode, code: string): string {
   switch (reason) {
     case 'no-such-room':
-      return `Kein Raum mit dem Code ${code}. Vertippt — oder hat dein Freund den Raum noch gar nicht eröffnet?`
+      return `No room with the code ${code}. A typo — or hasn't your friend opened the room yet?`
     case 'room-full':
-      return `Der Raum ${code} ist voll. Der Wirt kann die Spielerzahl erhöhen, dann geht noch jemand hinein.`
+      return `Room ${code} is full. The host can raise the player count to make space for one more.`
     case 'already-started':
-      return `Im Raum ${code} läuft die Partie schon. Wer nicht von Anfang an dabei war, kommt nicht mehr dazu.`
+      return `The game in room ${code} has already started. Players who weren't there from the start can't join anymore.`
     case 'bad-code':
-      return 'Diesen Raumcode gibt es so nicht.'
+      return "That isn't a valid room code."
     case 'bad-name':
-      return 'Ohne Namen geht es nicht — trag einen ein und versuch es noch einmal.'
+      return 'You need a name — enter one and try again.'
   }
 }
 
@@ -255,8 +256,8 @@ function countRankedResult(current: Session): void {
 
   rankNote =
     result.delta === 0
-      ? `${result.place}. Platz — unter null geht es nicht, du bleibst bei ${stand}.`
-      : `${result.place}. Platz — ${result.delta > 0 ? '+' : ''}${result.delta} Rangpunkte. Du stehst bei ${stand}.`
+      ? `${ordinal(result.place)} place — you can't drop below zero, so you stay at ${stand}.`
+      : `${ordinal(result.place)} place — ${result.delta > 0 ? '+' : '-'}${plural(Math.abs(result.delta), 'rank point', 'rank points')}. You are now at ${stand}.`
 }
 
 const handlers = {

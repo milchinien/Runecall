@@ -88,7 +88,7 @@ export function createSession(options: SessionOptions, onChange: () => void): Se
 
   const botAt = (seat: number): Bot => {
     const bot = bots[seat]
-    if (bot === undefined) throw new Error(`Kein Bot auf Platz ${seat}`)
+    if (bot === undefined) throw new Error(`No bot in seat ${seat}`)
     return bot
   }
 

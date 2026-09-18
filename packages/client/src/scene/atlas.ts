@@ -137,7 +137,7 @@ async function drawFallbackSheet(ids: string[], source: HTMLImageElement | null)
   canvas.height = rows * PITCH_Y
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer die Kartentafel')
+  if (ctx === null) throw new Error('No 2D context for the card atlas')
 
   const byId = new Map(createDeck().map((card) => [card.id, card] as const))
   const entries = new Map<string, CardArt>()
@@ -203,7 +203,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     const image = new Image()
     image.decoding = 'async'
     image.addEventListener('load', () => resolve(image))
-    image.addEventListener('error', () => reject(new Error(`Bildtafel ${src} fehlt`)))
+    image.addEventListener('error', () => reject(new Error(`Card atlas image ${src} is missing`)))
     image.src = assetUrl(src)
   })
 }
@@ -276,7 +276,7 @@ function drawTypographic(ctx: CanvasRenderingContext2D, card: Card | null): stri
   ctx.fillText(mage ? '★' : '?', W / 2, H * 0.42)
 
   ctx.font = '800 34px system-ui, sans-serif'
-  ctx.fillText(mage ? 'MAGIER' : 'NARR', W / 2, H * 0.78)
+  ctx.fillText(mage ? 'WIZARD' : 'JESTER', W / 2, H * 0.78)
 
   return mage ? '#37187d' : '#96690f'
 }

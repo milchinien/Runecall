@@ -164,13 +164,13 @@ export function createGame(options: GameOptions): GameState {
   if (!Number.isInteger(playerCount) || playerCount < MIN_PLAYERS || playerCount > MAX_PLAYERS) {
     throw new RuleError(
       'player-count',
-      `Runecall wird zu ${MIN_PLAYERS} bis ${MAX_PLAYERS} gespielt, nicht zu ${playerCount}`,
+      `Runecall is played with ${MIN_PLAYERS} to ${MAX_PLAYERS} players, not ${playerCount}`,
     )
   }
 
   const dealer = options.dealer ?? 0
   if (!Number.isInteger(dealer) || dealer < 0 || dealer >= playerCount) {
-    throw new RuleError('dealer', `Sitzplatz ${dealer} gibt es bei ${playerCount} Spielern nicht`)
+    throw new RuleError('dealer', `Seat ${dealer} does not exist with ${playerCount} players`)
   }
 
   const maxRounds = roundCount(playerCount)
@@ -178,7 +178,7 @@ export function createGame(options: GameOptions): GameState {
   if (!Number.isInteger(totalRounds) || totalRounds < 1 || totalRounds > maxRounds) {
     throw new RuleError(
       'total-rounds',
-      `Zu ${playerCount} Spielern sind 1 bis ${maxRounds} Runden moeglich, nicht ${totalRounds}`,
+      `With ${playerCount} players, 1 to ${maxRounds} rounds are possible, not ${totalRounds}`,
     )
   }
 
@@ -233,7 +233,7 @@ function startRound(state: GameState, roundNumber: number, dealer: number): Game
       const card = deck[index]
       const hand = hands[(dealer + step) % playerCount]
       if (card === undefined || hand === undefined) {
-        throw new RuleError('deal', `Das Deck reicht fuer Runde ${roundNumber} nicht aus`)
+        throw new RuleError('deal', `The deck is too small for round ${roundNumber}`)
       }
       hand.push(card)
       index++
@@ -301,7 +301,7 @@ export function applyAction(state: GameState, action: Action): GameState {
 
 function requirePhase(state: GameState, expected: Phase): void {
   if (state.phase !== expected) {
-    throw new RuleError('phase', `Erwartet wurde die Phase ${expected}, die Partie steht auf ${state.phase}`)
+    throw new RuleError('phase', `Expected phase ${expected}, but the game is in phase ${state.phase}`)
   }
 }
 
@@ -310,7 +310,7 @@ function chooseTrump(state: GameState, suit: Suit): GameState {
   requirePhase(state, 'trump-choice')
 
   if (!SUITS.includes(suit)) {
-    throw new RuleError('suit', `${suit} ist keine der vier Farben`)
+    throw new RuleError('suit', `${suit} is not one of the four suits`)
   }
 
   return {
@@ -330,7 +330,7 @@ function placeBid(state: GameState, value: number): GameState {
   requirePhase(state, 'bidding')
 
   if (!Number.isInteger(value) || value < 0 || value > state.roundNumber) {
-    throw new RuleError('bid-range', `Ansage ${value} liegt nicht zwischen 0 und ${state.roundNumber}`)
+    throw new RuleError('bid-range', `Bid ${value} is not between 0 and ${state.roundNumber}`)
   }
 
   const player = state.turn
@@ -353,17 +353,17 @@ function playCard(state: GameState, cardId: CardId): GameState {
   const player = state.turn
   const hand = state.hands[player]
   if (hand === undefined) {
-    throw new RuleError('seat', `Sitzplatz ${player} gibt es nicht`)
+    throw new RuleError('seat', `Seat ${player} does not exist`)
   }
 
   const card = hand.find((held) => held.id === cardId)
   if (card === undefined) {
-    throw new RuleError('card-not-in-hand', `Karte ${cardId} liegt nicht auf der Hand von Sitzplatz ${player}`)
+    throw new RuleError('card-not-in-hand', `Card ${cardId} is not in the hand of seat ${player}`)
   }
 
   const violation = playViolation(card, hand, state.currentTrick)
   if (violation !== null) {
-    throw new RuleError(violation.code, `Sitzplatz ${player} muss ${violation.suit} bedienen`)
+    throw new RuleError(violation.code, `Seat ${player} must follow suit (${violation.suit})`)
   }
 
   const hands = state.hands.map((cards, seat) =>
@@ -426,7 +426,7 @@ function playCard(state: GameState, cardId: CardId): GameState {
 function finishRound(state: GameState): GameState {
   const bids = state.bids.map((bid, seat) => {
     if (bid === null) {
-      throw new RuleError('internal', `Sitzplatz ${seat} hat nie angesagt, die Runde kann nicht gewertet werden`)
+      throw new RuleError('internal', `Seat ${seat} never bid, so the round cannot be scored`)
     }
     return bid
   })
@@ -504,7 +504,7 @@ export type PlayerView = {
 export function playerView(state: GameState, player: number): PlayerView {
   const hand = state.hands[player]
   if (hand === undefined) {
-    throw new RuleError('seat', `Sitzplatz ${player} gibt es nicht`)
+    throw new RuleError('seat', `Seat ${player} does not exist`)
   }
 
   const onTurn = state.phase === 'playing' && state.turn === player

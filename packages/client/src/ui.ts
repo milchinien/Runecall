@@ -35,7 +35,7 @@ import {
 } from '@runecall/engine'
 import { estimateTricks } from '@runecall/bots'
 
-import { cardLabel } from './cardview.ts'
+import { cardLabel, createCardElement } from './cardview.ts'
 import { SUIT_STYLES, createRune } from './runes.ts'
 import { loadCardAtlas } from './scene/atlas.ts'
 import { clamp } from './scene/motion.ts'
@@ -50,16 +50,20 @@ import type { Session } from './session.ts'
  *
  * Gegen Bots stehen hier die festen Namen aus der Sitzung, online die, die
  * sich die Leute selbst gegeben haben. Der eigene Platz heisst in beiden
- * Faellen "Du" -- dafuer sorgt die Sitzung, nicht die Darstellung.
+ * Faellen "You" -- dafuer sorgt die Sitzung, nicht die Darstellung.
  */
 let names: readonly string[] = []
-const nameOf = (seat: number): string => names[seat] ?? `Platz ${seat}`
+/** Der eigene Platz -- gegen Bots 0, online der zugeteilte. */
+let mySeat = 0
+const nameOf = (seat: number): string => names[seat] ?? `Seat ${seat}`
+/** Verbform passend zum Namen: "You win", aber "Ben wins". */
+const verbFor = (seat: number, you: string, other: string): string => (seat === mySeat ? you : other)
 
 const REASON_LABEL = {
-  mage: 'erster Magier',
-  trump: 'höchster Trumpf',
-  'led-suit': 'höchste angespielte Farbe',
-  'jesters-only': 'nur Narren — der erste gewinnt',
+  mage: 'first Wizard',
+  trump: 'highest trump',
+  'led-suit': 'highest card of the led suit',
+  'jesters-only': 'only Jesters — the first one wins',
 } as const
 
 /** Auf Geraeten ohne Mauszeiger hebt der erste Tipp die Karte nur an (Frage 2.10). */
@@ -89,7 +93,7 @@ const TRUMP_ANCHOR = new Vector3(2.15, 0.05, 0.72)
 
 const $ = <T extends HTMLElement>(id: string): T => {
   const el = document.getElementById(id)
-  if (el === null) throw new Error(`Element #${id} fehlt im Dokument`)
+  if (el === null) throw new Error(`Element #${id} is missing from the document`)
   return el as T
 }
 
@@ -195,8 +199,8 @@ export function bootScene(): void {
       if (session !== null) renderTable(session, tableHandlers)
     })
     .catch((error: unknown) => {
-      console.error('Runecall: Die Kartentafel liess sich nicht laden.', error)
-      showToast('Die Kartenbilder fehlen — bitte neu laden.')
+      console.error('Runecall: the card atlas could not be loaded.', error)
+      showToast('Card images are missing — please reload.')
     })
     .finally(() => {
       booting = false
@@ -233,9 +237,10 @@ export function renderTable(current: Session, handlers: TableHandlers): void {
 
   names = current.names
   const view = current.view()
+  mySeat = view.you
   const frozen = current.waiting() === 'trick'
 
-  $('roundInfo').textContent = `Runde ${view.roundNumber} von ${view.totalRounds}`
+  $('roundInfo').textContent = `Round ${view.roundNumber} of ${view.totalRounds}`
 
   // Die gemessenen Schildmasse gelten nur bis zur naechsten Aenderung des
   // Textes -- und die passiert genau hier.
@@ -312,7 +317,7 @@ function renderPlates(view: PlayerView, current: Session): void {
     el.classList.toggle('is-winner', current.waiting() === 'trick' && view.lastTrick?.winner === seat)
     el.classList.toggle('is-hit', hit)
     el.classList.toggle('is-missed', scored && !hit)
-    el.title = seat === view.dealer ? 'Geber' : ''
+    el.title = seat === view.dealer ? 'Dealer' : ''
   }
 }
 
@@ -352,7 +357,7 @@ function renderTrump(view: PlayerView): void {
   if (suit !== null) el.append(createRune(suit))
 
   const text = document.createElement('span')
-  text.textContent = suit === null ? 'ohne Trumpf' : `Trumpf ${SUIT_STYLES[suit].label}`
+  text.textContent = suit === null ? 'No trump' : `Trump: ${SUIT_STYLES[suit].label}`
   el.append(text)
 }
 
@@ -413,32 +418,32 @@ function renderStatus(view: PlayerView, current: Session): void {
 function statusText(view: PlayerView, current: Session): string {
   if (current.waiting() === 'trick' && view.lastTrick !== null) {
     const { winner, reason } = view.lastTrick
-    return `${nameOf(winner)} gewinnt den Stich — ${REASON_LABEL[reason]}`
+    return `${nameOf(winner)} ${verbFor(winner, 'win', 'wins')} the trick — ${REASON_LABEL[reason]}`
   }
 
   switch (view.phase) {
     case 'trump-choice':
       return view.dealer === view.you
-        ? 'Ein Magier liegt offen — wähle die Trumpffarbe.'
-        : `${nameOf(view.dealer)} wählt die Trumpffarbe …`
+        ? 'A Wizard was turned up — choose the trump suit.'
+        : `${nameOf(view.dealer)} is choosing the trump suit …`
 
     case 'bidding':
       return view.turn === view.you
-        ? 'Wie viele Stiche gewinnst du?'
-        : `${nameOf(view.turn)} sagt an …`
+        ? 'How many tricks will you win?'
+        : `${nameOf(view.turn)} is bidding …`
 
     case 'playing': {
       const led = ledSuitOf(view.currentTrick)
       const farbe =
         led.suit !== null
-          ? `${SUIT_STYLES[led.suit].label} angespielt`
+          ? `${SUIT_STYLES[led.suit].label} led`
           : led.settled
-            ? 'keine Farbe angespielt — alle frei'
+            ? 'no suit to follow — any card goes'
             : view.currentTrick.length > 0
-              ? 'Farbe noch offen'
-              : 'neuer Stich'
-      const wer = view.turn === view.you ? 'du bist am Zug' : `${nameOf(view.turn)} ist am Zug`
-      return `Stich ${view.trickNumber} von ${view.roundNumber} · ${farbe} · ${wer}`
+              ? 'no suit led yet'
+              : 'new trick'
+      const wer = view.turn === view.you ? 'your turn' : `${nameOf(view.turn)}'s turn`
+      return `Trick ${view.trickNumber} of ${view.roundNumber} · ${farbe} · ${wer}`
     }
 
     default:
@@ -463,7 +468,7 @@ function renderActions(view: PlayerView, current: Session): void {
       // wer Rot und Gruen nicht unterscheidet, waehlt sonst blind
       // (Entscheidung 24). Es ist dieselbe Rune wie auf der Karte.
       button.append(createRune(suit), document.createTextNode(SUIT_STYLES[suit].label))
-      button.title = `${SUIT_STYLES[suit].label} — Rune ${SUIT_STYLES[suit].runeName}`
+      button.title = `${SUIT_STYLES[suit].label} — rune ${SUIT_STYLES[suit].runeName}`
       button.addEventListener('click', () => current.chooseTrump(suit))
       box.append(button)
     }
@@ -485,7 +490,7 @@ function renderActions(view: PlayerView, current: Session): void {
     button.textContent = String(value)
     if (value === suggestion) {
       button.classList.add('is-suggested')
-      button.title = 'Vorschlag der Ansage-Hilfe'
+      button.title = 'Suggested by the bid assist'
     }
     button.addEventListener('click', () => current.bid(value))
     box.append(button)
@@ -496,7 +501,7 @@ function renderActions(view: PlayerView, current: Session): void {
   if (suggestion !== null) {
     const hint = document.createElement('span')
     hint.className = 'actions__hint'
-    hint.textContent = `Deine Hand ist etwa ${estimate.toFixed(1)} Stiche wert`
+    hint.textContent = `Your hand is worth about ${estimate.toFixed(1)} tricks`
     box.append(hint)
   }
 }
@@ -516,7 +521,14 @@ function arrangeArc(box: HTMLElement): void {
   if (count === 0) return
 
   const radius = 640
-  const total = Math.min(0.66, 0.085 * count)
+  // Breite Knoepfe (die Trumpffarben mit Rune und Wort) brauchen mehr Bogen,
+  // sonst schieben sie sich uebereinander. Die schmalen Zahlenknoepfe der
+  // Ansage bleiben beim bisherigen Mass.
+  let span = 0
+  for (let i = 1; i < count; i++) {
+    span += ((items[i - 1]?.offsetWidth ?? 0) + (items[i]?.offsetWidth ?? 0)) / 2 + 8
+  }
+  const total = Math.min(0.66, Math.max(0.085 * count, span / radius))
 
   items.forEach((el, index) => {
     const share = count > 1 ? index / (count - 1) - 0.5 : 0
@@ -571,6 +583,10 @@ function renderHandKeys(view: PlayerView, current: Session): void {
       button = document.createElement('button')
       button.type = 'button'
       button.className = 'handkey'
+      const face = createCardElement(card)
+      face.classList.add('mobile-card-face')
+      face.setAttribute('aria-hidden', 'true')
+      button.append(face)
       // Der Zuhaenger fragt den Zustand erst beim Klick ab. Wuerde er die
       // Sicht von jetzt festhalten, entschiede beim Klick eine veraltete
       // Lage darueber, ob der Zug erlaubt ist.
@@ -584,13 +600,16 @@ function renderHandKeys(view: PlayerView, current: Session): void {
     }
 
     const playable = myTurn && view.playable.includes(card.id)
-    const position = `Karte ${index + 1} von ${hand.length}`
-    const state = !myTurn ? '' : playable ? ', spielbar' : ', gesperrt'
+    const position = `Card ${index + 1} of ${hand.length}`
+    const state = !myTurn ? '' : playable ? ', playable' : ', not playable'
 
     button.setAttribute('aria-label', `${cardLabel(card)} — ${position}${state}`)
     button.setAttribute('aria-disabled', String(myTurn && !playable))
     button.dataset['card'] = card.id
-    button.tabIndex = myTurn ? 0 : -1
+    button.classList.toggle('is-selected', selected === card.id)
+    button.tabIndex = myTurn || window.matchMedia('(max-width: 900px)').matches ? 0 : -1
+    // Reordering existing DOM cards must follow the same sorted order as the scene.
+    box.append(button.parentElement!)
   })
 }
 
@@ -628,16 +647,18 @@ function pickCard(cardId: CardId): void {
 
   const violation = playViolation(card, view.hand, view.currentTrick)
   if (violation !== null) {
-    showToast(`Du musst ${SUIT_STYLES[violation.suit].label} bedienen`)
+    showToast(`You must follow suit — play ${SUIT_STYLES[violation.suit].label}`)
     renderTable(current, tableHandlers)
     return
   }
 
   // Auf dem Telefon hebt der erste Tipp die Karte nur an, erst der zweite
   // spielt sie -- das schuetzt vor Fehlgriffen im engen Faecher (Frage 2.10).
-  if (twoStep && selected !== cardId) {
+  if ((twoStep || window.matchMedia('(max-width: 900px)').matches) && selected !== cardId) {
     selected = cardId
     table?.select(cardId)
+    for (const [id, button] of handKeys) button.classList.toggle('is-selected', id === cardId)
+    showToast(`${cardLabel(card)} — tap again to play`)
     return
   }
 
@@ -663,13 +684,13 @@ function renderCounting(view: PlayerView, current: Session): void {
 
   const title = document.createElement('span')
   title.className = 'counting__title'
-  title.textContent = 'In dieser Runde gefallen'
+  title.textContent = 'Played this round'
   box.append(title)
 
   if (view.playedCards.length === 0) {
     const none = document.createElement('span')
     none.className = 'counting__none'
-    none.textContent = 'noch nichts'
+    none.textContent = 'nothing yet'
     box.append(none)
     return
   }
@@ -715,7 +736,7 @@ function renderSheet(view: PlayerView, current: Session, handlers: TableHandlers
 
   const heading = document.createElement('h2')
   heading.textContent =
-    view.phase === 'game-over' ? 'Partie zu Ende' : `Runde ${view.roundNumber} gewertet`
+    view.phase === 'game-over' ? 'Game over' : `Round ${view.roundNumber} scored`
   panel.append(heading)
 
   /*
@@ -748,7 +769,7 @@ function renderSheet(view: PlayerView, current: Session, handlers: TableHandlers
   const scores = document.createElement('table')
   scores.className = 'sheet__table'
   scores.innerHTML =
-    '<thead><tr><th>Spieler</th><th>Ansage</th><th>Stiche</th><th>Runde</th><th>Gesamt</th></tr></thead>'
+    '<thead><tr><th>Player</th><th>Bid</th><th>Tricks</th><th>Round</th><th>Total</th></tr></thead>'
 
   const body = document.createElement('tbody')
   const order = view.scores.map((score, seat) => ({ seat, score })).sort((a, b) => b.score - a.score)
@@ -789,19 +810,19 @@ function renderSheet(view: PlayerView, current: Session, handlers: TableHandlers
   if (view.phase === 'round-end') {
     const next = document.createElement('button')
     next.type = 'button'
-    next.textContent = 'Nächste Runde'
+    next.textContent = 'Next round'
     next.addEventListener('click', () => current.nextRound())
     actions.append(next)
   } else {
     const again = document.createElement('button')
     again.type = 'button'
-    again.textContent = 'Neue Partie'
+    again.textContent = 'New game'
     again.addEventListener('click', handlers.onNewGame)
 
     const menu = document.createElement('button')
     menu.type = 'button'
     menu.className = 'ghost'
-    menu.textContent = 'Menü'
+    menu.textContent = 'Menu'
     menu.addEventListener('click', handlers.onMenu)
 
     actions.append(again, menu)
@@ -825,26 +846,29 @@ function sheetNote(view: PlayerView): string {
 
     if (winners.length > 1) {
       const names = winners.map(nameOf)
-      return `Geteilter Sieg für ${names.slice(0, -1).join(', ')} und ${names.at(-1)} — ${best} Punkte.`
+      return `Shared win for ${names.slice(0, -1).join(', ')} and ${names.at(-1)} — ${points(best)}.`
     }
     const winner = winners[0] ?? 0
     return winner === view.you
-      ? `Du gewinnst mit ${best} Punkten.`
-      : `${nameOf(winner)} gewinnt mit ${best} Punkten.`
+      ? `You win with ${points(best)}.`
+      : `${nameOf(winner)} wins with ${points(best)}.`
   }
 
   const bid = view.bids[view.you] ?? 0
   const won = view.tricksWon[view.you] ?? 0
   const gained = roundScore(bid, won)
-  if (bid === won) return `Ansage getroffen — ${gained} Punkte dazu.`
+  if (bid === won) return `Bid made — ${points(gained)} gained.`
 
   const off = Math.abs(won - bid)
-  const stiche = off === 1 ? 'Ein Stich' : `${off} Stiche`
-  const richtung = won > bid ? 'zu viel' : 'zu wenig'
+  const stiche = off === 1 ? 'One trick' : `${off} tricks`
+  const richtung = won > bid ? 'too many' : 'too few'
   // Das Vorzeichen steht im Wort, nicht an der Zahl: "— -10 Punkte" liest
   // sich wie ein Tippfehler.
-  return `${stiche} ${richtung} — ${Math.abs(gained)} Punkte ab.`
+  return `${stiche} ${richtung} — ${points(Math.abs(gained))} lost.`
 }
+
+/** Punktzahl mit Einzahl oder Mehrzahl. */
+const points = (value: number): string => `${value} ${Math.abs(value) === 1 ? 'point' : 'points'}`
 
 /* ------------------------------------------------------------------ *
  * Ankerpunkte
@@ -863,6 +887,12 @@ function anchorOverlay(): void {
   const scene = table
   const current = stage
   if (current === null) return
+  // The phone uses a stable HUD and a scrollable hand, independent of the 3D camera.
+  if (window.matchMedia('(max-width: 900px)').matches) {
+    for (const el of plates.values()) el.style.visibility = ''
+    for (const button of handKeys.values()) button.style.visibility = ''
+    return
+  }
 
   place($('actions'), current.toScreen(ACTION_ANCHOR, anchor))
   placeInside($('status'), current.toScreen(STATUS_ANCHOR, anchor))

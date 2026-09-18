@@ -344,7 +344,7 @@ function createBackdropTexture(): Texture {
   canvas.height = BACKDROP_H
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer die Buehne')
+  if (ctx === null) throw new Error('No 2D context for the stage backdrop')
 
   ctx.fillStyle = '#d00028'
   ctx.fillRect(0, 0, BACKDROP_W, BACKDROP_H)
@@ -560,7 +560,7 @@ function createFeltTexture(anisotropy: number): Texture {
   canvas.height = size
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer die Tischplatte')
+  if (ctx === null) throw new Error('No 2D context for the table top')
 
   ctx.fillStyle = '#831c38'
   ctx.fillRect(0, 0, size, size)
@@ -843,7 +843,7 @@ function createEdgeTexture(): Texture {
   canvas.height = 4
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer die Tischkante')
+  if (ctx === null) throw new Error('No 2D context for the table edge')
 
   const gradient = ctx.createLinearGradient(0, 0, width, 0)
   gradient.addColorStop(0.0, 'rgba(112, 74, 176, 0)')
@@ -868,7 +868,7 @@ function createRimTexture(): Texture {
   canvas.height = 4
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer den Kantenschimmer')
+  if (ctx === null) throw new Error('No 2D context for the edge sheen')
 
   const gradient = ctx.createLinearGradient(0, 0, width, 0)
   gradient.addColorStop(0.0, 'rgba(196, 164, 246, 0)')
@@ -890,7 +890,7 @@ function createSkirtTexture(): Texture {
   canvas.height = height
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer die Zarge')
+  if (ctx === null) throw new Error('No 2D context for the table apron')
 
   // Nach unten wird die Zarge nicht nur dunkler, sondern durchsichtig. Ein
   // sauber abgeschnittener Rand waere wieder eine Silhouette; so laeuft der
@@ -917,7 +917,7 @@ function createPoolTexture(): Texture {
   canvas.height = size
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer den Lichtteppich')
+  if (ctx === null) throw new Error('No 2D context for the light pool')
 
   paintGlow(ctx, size / 2, size / 2, size / 2, [
     [0.0, 'rgba(108, 52, 208, 0.5)'],
@@ -1101,7 +1101,7 @@ function createMoteTexture(): Texture {
   canvas.height = size
 
   const ctx = canvas.getContext('2d')
-  if (ctx === null) throw new Error('Kein 2D-Kontext fuer die Partikel')
+  if (ctx === null) throw new Error('No 2D context for the particles')
 
   const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
   gradient.addColorStop(0, 'rgba(255, 255, 255, 1)')

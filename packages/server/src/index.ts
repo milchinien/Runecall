@@ -65,16 +65,16 @@ export default {
 
     const match = /^\/room\/([^/]+)$/.exec(url.pathname)
     if (match === null) {
-      return new Response('Nicht gefunden', { status: 404, headers: cors })
+      return new Response('Not found', { status: 404, headers: cors })
     }
 
     const code = (match[1] ?? '').toUpperCase()
     if (!isCode(code)) {
-      return new Response('Ungueltiger Raumcode', { status: 400, headers: cors })
+      return new Response('Invalid room code', { status: 400, headers: cors })
     }
 
     if (request.headers.get('Upgrade')?.toLowerCase() !== 'websocket') {
-      return new Response('Hier spricht nur WebSocket', { status: 426, headers: cors })
+      return new Response('WebSocket connections only', { status: 426, headers: cors })
     }
 
     const room = env.ROOMS.get(env.ROOMS.idFromName(code))

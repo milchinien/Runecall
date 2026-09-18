@@ -29,10 +29,10 @@ export const HUMAN = 0
 /**
  * Die Namen der Bots (Entscheidung 2.17).
  *
- * Platz 0 ist der Mensch und heisst deshalb "Du" -- die Oberflaeche
+ * Platz 0 ist der Mensch und heisst deshalb "You" -- die Oberflaeche
  * unterscheidet nicht, sie liest nur ab.
  */
-const NAMES = ['Du', 'Ben', 'Chris', 'Dana', 'Emil', 'Fee'] as const
+const NAMES = ['You', 'Ben', 'Chris', 'Dana', 'Eli', 'Faye'] as const
 
 /** Worauf die Oberflaeche gerade wartet. */
 export type Waiting = 'none' | 'bot' | 'trick'
@@ -51,7 +51,7 @@ export type Session = {
   readonly settings: Settings
   /** Der Bauplan dieser Partie: Modus, Spielerzahl, Runden, Bot-Stufe. */
   readonly match: MatchConfig
-  /** Name je Platz. Der eigene Platz heisst immer "Du". */
+  /** Name je Platz. Der eigene Platz heisst immer "You". */
   readonly names: readonly string[]
   view(): PlayerView
   waiting(): Waiting

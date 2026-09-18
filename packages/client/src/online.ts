@@ -186,7 +186,7 @@ export function joinRoom(options: RoomOptions, handlers: RoomHandlers): Room {
       attempt += 1
       if (attempt > RETRY_LIMIT) {
         status = 'closed'
-        handlers.onClosed('Verbindung zum Server verloren.')
+        handlers.onClosed('Lost the connection to the server.')
         return
       }
 
@@ -463,7 +463,7 @@ function createOnlineSession(options: OnlineOptions): OnlineSession {
   }
 }
 
-/** Der eigene Platz heisst "Du" -- darauf verlaesst sich die Darstellung. */
+/** Der eigene Platz heisst "You" -- darauf verlaesst sich die Darstellung. */
 function label(source: readonly string[], you: number): readonly string[] {
-  return source.map((name, seat) => (seat === you ? 'Du' : name))
+  return source.map((name, seat) => (seat === you ? 'You' : name))
 }

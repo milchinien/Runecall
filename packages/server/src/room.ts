@@ -55,7 +55,7 @@ type Persisted = {
 type Attachment = { readonly seat: number; readonly token: string }
 
 /** Namen fuer Bots (Entscheidung 2.17). */
-const BOT_NAMES = ['Ben', 'Chris', 'Dana', 'Emil', 'Fee', 'Gil'] as const
+const BOT_NAMES = ['Ben', 'Chris', 'Dana', 'Eli', 'Faye', 'Gil'] as const
 
 /**
  * Wann ein vergessener Raum verschwindet.
@@ -134,7 +134,7 @@ export class RoomDO implements DurableObject {
       send(ws, {
         type: 'rejected',
         code: 'server',
-        message: error instanceof Error ? error.message : 'Unbekannter Fehler',
+        message: error instanceof Error ? error.message : 'Unknown error',
       })
     }
   }
@@ -164,7 +164,7 @@ export class RoomDO implements DurableObject {
     const last = (await this.#state.storage.get<number>('touched')) ?? 0
 
     if (Date.now() - last >= IDLE_MS) {
-      for (const ws of this.#state.getWebSockets()) ws.close(1000, 'Raum abgelaufen')
+      for (const ws of this.#state.getWebSockets()) ws.close(1000, 'Room expired')
       await this.#state.storage.deleteAll()
       this.#room = null
       return
@@ -345,7 +345,7 @@ export class RoomDO implements DurableObject {
     // Der eigene Zug muss der eigene sein. Beim Rundenwechsel ist niemand
     // "am Zug" -- dort darf jeder weiterklicken, der noch im Raum sitzt.
     if (action.type !== 'next-round' && moverOf(game) !== seat) {
-      throw new RuleError('not-your-turn', `Platz ${seat} ist nicht am Zug`)
+      throw new RuleError('not-your-turn', `It is not seat ${seat}'s turn`)
     }
 
     this.#room = { ...room, game: applyAction(game, action) }
@@ -473,7 +473,7 @@ export class RoomDO implements DurableObject {
 
   #lobby(): Lobby {
     const room = this.#room
-    if (room === null) throw new Error('Kein Raum')
+    if (room === null) throw new Error('No room')
 
     const connected = this.#connectedSeats()
     const seats: Occupant[] = room.seats.map((seat, index) =>
@@ -497,7 +497,7 @@ export class RoomDO implements DurableObject {
     const room = this.#room
     if (room === null) return []
     return room.seats.map((seat, index) =>
-      seat.kind === 'empty' ? `Platz ${index + 1}` : seat.name,
+      seat.kind === 'empty' ? `Seat ${index + 1}` : seat.name,
     )
   }
 
